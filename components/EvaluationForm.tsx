@@ -8,14 +8,15 @@ interface EvaluationFormProps {
   observers: Observer[];
   customWeights: Record<string, number[]>;
   initialData?: Partial<Evaluation>;
+  currentUser: Observer;
   onSave: (ev: Evaluation) => void;
   onCancel: () => void;
 }
 
-const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, customWeights, initialData, onSave, onCancel }) => {
+const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, customWeights, initialData, currentUser, onSave, onCancel }) => {
   const [type, setType] = useState(initialData?.type || 'gp');
   const [tid, setTid] = useState(initialData?.tid || '');
-  const [oid, setOid] = useState(initialData?.oid || '');
+  const [oid, setOid] = useState(initialData?.oid || currentUser.id);
   const [scores, setScores] = useState<Record<string, number>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [comments, setComments] = useState(initialData?.comments || '');
@@ -33,6 +34,17 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
       setNotes(nm);
     }
   }, [initialData]);
+
+  const allowedTeachers = teachers.filter(t => {
+    if (currentUser?.role === 'admin') return true;
+    if (!currentUser?.permissions) return true;
+    
+    const p = currentUser.permissions;
+    if (p.viewScope === 'all' || p.viewScope === 'own') return true;
+    if (p.viewScope === 'stage' && p.allowedStages?.includes(t.division)) return true;
+    if (p.viewScope === 'subject' && p.allowedSubjects?.includes(t.subject)) return true;
+    return false;
+  });
 
   const rubric = getRubric(type, customWeights);
   const total = countInds(type);
@@ -141,12 +153,12 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             <label className="flabel">Staff Member</label>
             <select className="finput" value={tid} onChange={e => setTid(e.target.value)}>
               <option value="">— Select Staff Member —</option>
-              {teachers.map(t => <option key={t.id} value={t.id}>{t.fullName} · {t.role}</option>)}
+              {allowedTeachers.map(t => <option key={t.id} value={t.id}>{t.fullName} · {t.role}</option>)}
             </select>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="flabel">Evaluator / Observer</label>
-            <select className="finput" value={oid} onChange={e => setOid(e.target.value)}>
+            <select className="finput" value={oid} onChange={e => setOid(e.target.value)} disabled={currentUser.role !== 'admin'}>
               <option value="">— Select Evaluator —</option>
               {observers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
@@ -262,15 +274,24 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             onChange={e => setComments(e.target.value)}
           />
         </div>
-        <button 
-          className={`btn ${isComplete ? 'btn-primary' : 'btn-ghost'}`} 
-          style={{ width: '100%', justifyContent: 'center', padding: '18px', fontSize: '14px' }}
-          disabled={!isComplete}
-          onClick={() => handleSave(false)}
-        >
-          <span className="material-icons">{isComplete ? 'check_circle' : 'lock'}</span> 
-          {isComplete ? 'Finalize & Lock Evaluation' : `${total - done} indicator${total - done !== 1 ? 's' : ''} remaining to finalize`}
-        </button>
+        <div style={{ display: 'flex', gap: '16px' }}>
+          <button 
+            className="btn btn-ghost" 
+            style={{ flex: 1, justifyContent: 'center', padding: '18px', fontSize: '14px', border: '1px solid var(--border)' }}
+            onClick={() => handleSave(true)}
+          >
+            <span className="material-icons-outlined">save</span> Save Draft
+          </button>
+          <button 
+            className={`btn ${isComplete ? 'btn-primary' : 'btn-ghost'}`} 
+            style={{ flex: 2, justifyContent: 'center', padding: '18px', fontSize: '14px' }}
+            disabled={!isComplete}
+            onClick={() => handleSave(false)}
+          >
+            <span className="material-icons">{isComplete ? 'check_circle' : 'lock'}</span> 
+            {isComplete ? 'Finalize & Lock Evaluation' : `${total - done} indicator${total - done !== 1 ? 's' : ''} remaining to finalize`}
+          </button>
+        </div>
       </div>
     </div>
   );

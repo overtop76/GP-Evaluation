@@ -11,12 +11,41 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvaluation }) => {
-  const finals = state.evaluations.filter(e => !e.draft);
-  const drafts = state.evaluations.filter(e => e.draft);
-  const avg = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights), 0) / finals.length : 0;
+  const currentUser = state.currentUser;
+  
+  // Filter data based on permissions
+  const allowedTeachers = state.teachers.filter(t => {
+    if (currentUser?.role === 'admin') return true;
+    if (!currentUser?.permissions) return true; // Default to all if no permissions set
+    
+    const p = currentUser.permissions;
+    if (p.viewScope === 'all' || p.viewScope === 'own') return true; // 'own' is filtered at evaluation level, but they can see the teacher
+    if (p.viewScope === 'stage' && p.allowedStages?.includes(t.division)) return true;
+    if (p.viewScope === 'subject' && p.allowedSubjects?.includes(t.subject)) return true;
+    return false;
+  });
+  
+  const allowedTeacherIds = new Set(allowedTeachers.map(t => t.id));
+  
+  const allowedEvaluations = state.evaluations.filter(e => {
+    if (currentUser?.role === 'admin') return true;
+    if (!currentUser?.permissions) return true;
+    
+    const p = currentUser.permissions;
+    if (p.viewScope === 'own' && e.oid !== currentUser.id) return false;
+    if (!allowedTeacherIds.has(e.tid)) return false;
+    return true;
+  });
+
+  const finals = allowedEvaluations.filter(e => !e.draft);
+  const drafts = allowedEvaluations.filter(e => e.draft);
+  const avg = finals.length ? finals.reduce((a, e) => {
+    const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
+    return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight);
+  }, 0) / finals.length : 0;
 
   const metrics = [
-    { lbl: 'Faculty Members', val: state.teachers.length, ico: 'people', col: '#2563eb' },
+    { lbl: 'Faculty Members', val: allowedTeachers.length, ico: 'people', col: '#2563eb' },
     { lbl: 'Completed Evals', val: finals.length, ico: 'assignment_turned_in', col: '#10b981' },
     { lbl: 'System Average', val: finals.length ? avg.toFixed(2) : '—', ico: 'trending_up', col: '#7c3aed', sub: finals.length ? getRating(avg).label : 'No data yet' },
     { lbl: 'Open Drafts', val: drafts.length, ico: 'edit_note', col: '#f59e0b' }
@@ -27,11 +56,14 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   // Prepare data for trend chart
   const trendData = [...finals]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-    .map(e => ({
-      date: fmtD(e.date),
-      score: computeScore(e, state.customWeights),
-      type: TYPE_LABELS[e.type]
-    }));
+    .map(e => {
+      const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
+      return {
+        date: fmtD(e.date),
+        score: computeScore(e, state.customWeights, teacherHRData, state.hrWeight),
+        type: TYPE_LABELS[e.type]
+      };
+    });
 
   return (
     <div className="page">
@@ -116,7 +148,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
               <tbody>
                 {recentEvals.length > 0 ? recentEvals.map(ev => {
                   const t = state.teachers.find(x => x.id === ev.tid);
-                  const s = computeScore(ev, state.customWeights);
+                  const teacherHRData = state.hrData?.find(h => h.teacherId === ev.tid);
+                  const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight);
                   const r = getRating(s);
                   return (
                     <tr key={ev.id}>
@@ -220,7 +253,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
             {Object.entries(TYPE_LABELS).map(([t, l]) => {
               const cnt = finals.filter(e => e.type === t).length;
               const evs = finals.filter(e => e.type === t);
-              const tavg = evs.length ? evs.reduce((a, e) => a + computeScore(e, state.customWeights), 0) / evs.length : 0;
+              const tavg = evs.length ? evs.reduce((a, e) => {
+                const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
+                return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight);
+              }, 0) / evs.length : 0;
               const r = evs.length ? getRating(tavg) : null;
               return (
                 <div key={t} style={{ border: `1px solid ${TYPE_COLORS[t]}30`, borderRadius: '16px', padding: '20px', background: `linear-gradient(145deg, ${TYPE_COLORS[t]}05, ${TYPE_COLORS[t]}10)`, position: 'relative', overflow: 'hidden' }}>

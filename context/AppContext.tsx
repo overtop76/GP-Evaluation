@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AppState, Teacher, Observer, Evaluation, Log, Score } from '../types';
+import { AppState, Teacher, Observer, Evaluation, Log, Score, HRData } from '../types';
 import { uid } from '../utils/helpers';
 
 const INIT_STATE: AppState = {
@@ -13,10 +13,13 @@ const INIT_STATE: AppState = {
   observers: [
     { id: 'o1', name: 'System Administrator', username: 'admin', role: 'admin', hash: '', salt: '' },
     { id: 'o2', name: 'Principal Skinner', username: 'observer', role: 'observer', hash: '', salt: '' },
+    { id: 'o3', name: 'HR Department', username: 'hr@globalparadigmschools.com', role: 'hr', hash: '', salt: '' },
   ],
   evaluations: [],
   logs: [],
   customWeights: {},
+  hrData: [],
+  hrWeight: 5,
 };
 
 interface AppContextType {
@@ -28,9 +31,12 @@ interface AppContextType {
   saveEvaluation: (ev: Evaluation) => void;
   deleteEvaluation: (id: string) => void;
   addUser: (user: Observer) => void;
+  updateUser: (user: Observer) => void;
   deleteUser: (id: string) => void;
   updateWeights: (type: string, weights: number[]) => void;
   resetWeights: (type: string) => void;
+  updateHRData: (data: HRData) => void;
+  updateHRWeight: (weight: number) => void;
   resetSystem: () => void;
   toasts: { id: string; msg: string; type: string }[];
   showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
@@ -158,6 +164,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast(`Account created for ${user.name}.`, 'success');
   };
 
+  const updateUser = (user: Observer) => {
+    setState(prev => ({
+      ...prev,
+      observers: prev.observers.map(o => o.id === user.id ? user : o)
+    }));
+    addLog('UPDATE_USER', `Updated: ${user.username}`, 'UPDATE');
+    showToast(`Account updated for ${user.name}.`, 'success');
+  };
+
   const deleteUser = (id: string) => {
     const u = state.observers.find(x => x.id === id);
     if (u) {
@@ -183,6 +198,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('Weights reset.', 'success');
   };
 
+  const updateHRData = (data: HRData) => {
+    setState(prev => {
+      const idx = prev.hrData.findIndex(d => d.teacherId === data.teacherId);
+      let newHR = [...prev.hrData];
+      if (idx >= 0) newHR[idx] = data;
+      else newHR.push(data);
+      return { ...prev, hrData: newHR };
+    });
+    addLog('UPDATE_HR', `Updated HR data for ${data.teacherId}`, 'UPDATE');
+    showToast('HR data saved.', 'success');
+  };
+
+  const updateHRWeight = (weight: number) => {
+    setState(prev => ({ ...prev, hrWeight: weight }));
+    addLog('UPDATE_HR_WEIGHT', `Updated HR weight to ${weight}%`, 'UPDATE');
+    showToast('HR weight updated.', 'success');
+  };
+
   const resetSystem = () => {
     setState({ ...INIT_STATE, currentUser: state.currentUser });
     addLog('RESET_SYSTEM', 'System reset to demo data', 'DELETE');
@@ -199,9 +232,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       saveEvaluation,
       deleteEvaluation,
       addUser,
+      updateUser,
       deleteUser,
       updateWeights,
       resetWeights,
+      updateHRData,
+      updateHRWeight,
       resetSystem,
       toasts,
       showToast

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Teacher, Evaluation } from '../types';
+import { Teacher, Evaluation, HRData, Observer } from '../types';
 import { computeScore, getRating, ini } from '../utils/helpers';
 import { SUBJECTS, ROLES, DIVS } from '../constants';
 
@@ -7,30 +7,52 @@ interface TeacherDirectoryProps {
   teachers: Teacher[];
   evaluations: Evaluation[];
   customWeights: Record<string, number[]>;
+  hrData?: HRData[];
+  hrWeight?: number;
+  currentUser: Observer;
   onAddTeacher: (t: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
   onNavigate: (page: string, params?: any) => void;
 }
 
-const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, onAddTeacher, onDeleteTeacher, onNavigate }) => {
+const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, hrData, hrWeight, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   
   // New Teacher Form State
   const [newName, setNewName] = useState('');
+  const [newEmployeeId, setNewEmployeeId] = useState('');
   const [newSubject, setNewSubject] = useState('');
   const [newRole, setNewRole] = useState('');
   const [newDivs, setNewDivs] = useState<string[]>([]);
 
-  const filteredTeachers = teachers.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase()));
+  // Filter based on permissions
+  const allowedTeachers = teachers.filter(t => {
+    if (currentUser?.role === 'admin') return true;
+    if (!currentUser?.permissions) return true;
+    
+    const p = currentUser.permissions;
+    if (p.viewScope === 'all' || p.viewScope === 'own') return true;
+    if (p.viewScope === 'stage' && p.allowedStages?.includes(t.division)) return true;
+    if (p.viewScope === 'subject' && p.allowedSubjects?.includes(t.subject)) return true;
+    return false;
+  });
+
+  const filteredTeachers = allowedTeachers.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase()));
 
   const handleAdd = () => {
-    if (!newName || !newSubject || !newRole || !newDivs.length) {
+    if (!newName || !newEmployeeId || !newSubject || !newRole || !newDivs.length) {
       alert('Please complete all fields.');
+      return;
+    }
+    // Check if employee ID is unique
+    if (teachers.some(t => t.employeeId === newEmployeeId)) {
+      alert('Employee ID must be unique.');
       return;
     }
     onAddTeacher({
       id: Date.now().toString(36),
+      employeeId: newEmployeeId,
       fullName: newName,
       subject: newSubject,
       role: newRole,
@@ -38,6 +60,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
     });
     setShowModal(false);
     setNewName('');
+    setNewEmployeeId('');
     setNewSubject('');
     setNewRole('');
     setNewDivs([]);
@@ -54,9 +77,11 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
           <h1 className="ph-title">Faculty Directory</h1>
           <p className="ph-sub">Manage staff and initiate evaluation sessions.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-          <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> Register Faculty
-        </button>
+        {currentUser.role === 'admin' && (
+          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+            <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> Register Faculty
+          </button>
+        )}
       </div>
 
       <div className="card-xl" style={{ overflow: 'hidden' }}>
@@ -90,7 +115,10 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
             <tbody>
               {filteredTeachers.length > 0 ? filteredTeachers.map(t => {
                 const evals = evaluations.filter(e => e.tid === t.id && !e.draft);
-                const avg = evals.length ? evals.reduce((a, e) => a + computeScore(e, customWeights), 0) / evals.length : null;
+                const avg = evals.length ? evals.reduce((a, e) => {
+                  const teacherHRData = hrData?.find(h => h.teacherId === e.tid);
+                  return a + computeScore(e, customWeights, teacherHRData, hrWeight);
+                }, 0) / evals.length : null;
                 const r = avg != null ? getRating(avg) : null;
                 return (
                   <tr key={t.id}>
@@ -121,12 +149,16 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                         <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('evaluate', { tid: t.id })}>
                           <span className="material-icons" style={{ fontSize: '16px' }}>play_circle</span> Evaluate
                         </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: t.id, type: 'gp' })}>
-                          <span className="material-icons-outlined" style={{ fontSize: '16px' }}>bar_chart</span> Report
-                        </button>
-                        <button className="icon-btn" onClick={() => onDeleteTeacher(t.id)} title="Delete Faculty">
-                          <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
-                        </button>
+                        {(!currentUser.permissions || currentUser.permissions.canViewReports) && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: t.id, type: 'gp' })}>
+                            <span className="material-icons-outlined" style={{ fontSize: '16px' }}>bar_chart</span> Report
+                          </button>
+                        )}
+                        {currentUser.role === 'admin' && (
+                          <button className="icon-btn" onClick={() => onDeleteTeacher(t.id)} title="Delete Faculty">
+                            <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -150,9 +182,15 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="mbox">
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>Register New Faculty</h2>
-            <div className="field">
-              <label className="flabel">Full Name</label>
-              <input className="finput" placeholder="e.g. Dr. Jane Smith" value={newName} onChange={e => setNewName(e.target.value)} />
+            <div className="g2">
+              <div className="field">
+                <label className="flabel">Full Name</label>
+                <input className="finput" placeholder="e.g. Dr. Jane Smith" value={newName} onChange={e => setNewName(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="flabel">Employee Number</label>
+                <input className="finput" placeholder="Unique ID" value={newEmployeeId} onChange={e => setNewEmployeeId(e.target.value)} />
+              </div>
             </div>
             <div className="g2">
               <div className="field">

@@ -1190,23 +1190,49 @@ select.finput {
 }
 
 @media print {
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
   .sidebar, .no-print {
     display: none !important;
   }
   #main {
     overflow: visible;
-    background: var(--white);
+    background: white;
+    margin: 0;
+    padding: 0;
   }
   .page {
     padding: 0;
     max-width: none;
+    margin: 0;
   }
   .card, .card-xl {
     box-shadow: none;
     border: 1px solid #e2e8f0;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin-bottom: 20px;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
   }
   body {
-    background: var(--white);
+    background: white;
+    color: black;
+  }
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 

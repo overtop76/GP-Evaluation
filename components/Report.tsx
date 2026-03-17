@@ -21,7 +21,18 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const teacher = state.teachers.find(t => t.id === teacherId);
   if (!teacher) return <div className="page"><div className="empty"><span className="material-icons mi">error_outline</span><p>Teacher not found.</p></div></div>;
 
-  const allFinals = state.evaluations.filter(e => e.tid === teacherId && e.type === currentType && !e.draft);
+  const allFinals = state.evaluations.filter(e => {
+    if (e.tid !== teacherId || e.type !== currentType || e.draft) return false;
+    
+    // Check permissions
+    if (state.currentUser?.role === 'admin') return true;
+    if (!state.currentUser?.permissions) return true;
+    
+    const p = state.currentUser.permissions;
+    if (p.viewScope === 'own' && e.oid !== state.currentUser.id) return false;
+    
+    return true;
+  });
   
   if (!allFinals.length) {
     return (
@@ -68,24 +79,42 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     return true;
   });
 
+  const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
+  
   const latest = finals.length ? finals[finals.length - 1] : null;
-  const latestScore = latest ? computeScore(latest, state.customWeights) : 0;
-  const avgScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights), 0) / finals.length : 0;
+  const latestScore = latest ? computeScore(latest, state.customWeights, teacherHRData, state.hrWeight) : 0;
+  const avgScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight), 0) / finals.length : 0;
   const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9' };
-  const ds = latest ? getDomainScores(latest, state.customWeights) : [];
+  const ds = latest ? getDomainScores(latest, state.customWeights, teacherHRData, state.hrWeight) : [];
   const rubric = getRubric(currentType, state.customWeights);
   
+  const isCollective = !observerFilter;
   const sm: Record<string, number> = {};
   const nm: Record<string, string> = {};
-  if (latest) latest.scores.forEach(s => {
-    sm[s.id] = s.score;
-    if (s.notes) nm[s.id] = s.notes;
-  });
+  
+  if (isCollective && finals.length > 0) {
+    const counts: Record<string, number> = {};
+    finals.forEach(f => {
+      f.scores.forEach(s => {
+        sm[s.id] = (sm[s.id] || 0) + s.score;
+        counts[s.id] = (counts[s.id] || 0) + 1;
+        if (s.notes) nm[s.id] = nm[s.id] ? `${nm[s.id]} | ${s.notes}` : s.notes;
+      });
+    });
+    Object.keys(sm).forEach(k => {
+      sm[k] = sm[k] / counts[k];
+    });
+  } else if (latest) {
+    latest.scores.forEach(s => {
+      sm[s.id] = s.score;
+      if (s.notes) nm[s.id] = s.notes;
+    });
+  }
   
   const strengths: { id: string, text: string, score: number }[] = [];
   const imps: { id: string, text: string, score: number }[] = [];
   
-  if (latest) {
+  if (Object.keys(sm).length > 0) {
     rubric.forEach(d => d.subdomains.forEach(s => s.indicators.forEach(i => {
       if (sm[i.id] >= 3) strengths.push({ id: i.id, text: i.text, score: sm[i.id] });
       else if (sm[i.id] && sm[i.id] <= 2) imps.push({ id: i.id, text: i.text, score: sm[i.id] });
@@ -119,9 +148,11 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <button key={t} className={`tbtn ${currentType === t ? 'active' : ''}`} onClick={() => setCurrentType(t)}>{TYPE_LABELS[t]}</button>
             ))}
           </div>
-          <button className="btn btn-dark no-print" onClick={() => window.print()}>
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>print</span> Print Report
-          </button>
+          {(!state.currentUser?.permissions || state.currentUser.permissions.canPrintReports) && (
+            <button className="btn btn-dark no-print" onClick={() => window.print()}>
+              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>print</span> Print Report
+            </button>
+          )}
         </div>
       </div>
 
@@ -138,12 +169,14 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '160px' }}>
           <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="End Date" />
         </div>
-        <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '200px' }}>
-          <select className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={observerFilter} onChange={e => setObserverFilter(e.target.value)}>
-            <option value="">All Observers</option>
-            {state.observers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
-          </select>
-        </div>
+        {(!state.currentUser?.permissions || state.currentUser.permissions.viewScope !== 'own') && (
+          <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '200px' }}>
+            <select className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={observerFilter} onChange={e => setObserverFilter(e.target.value)}>
+              <option value="">All Observers</option>
+              {state.observers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+            </select>
+          </div>
+        )}
         {(startDate || endDate || observerFilter) && (
           <button className="btn btn-ghost btn-sm" onClick={() => { setStartDate(''); setEndDate(''); setObserverFilter(''); }}>
             Clear
@@ -285,16 +318,44 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             </div>
 
+            {teacherHRData && (
+              <div style={{ padding: '0 32px 32px' }}>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>HR Attendance & Punctuality Data</h2>
+                <div className="card" style={{ padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Absences</div>
+                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Early Leaves</div>
+                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
+                  </div>
+                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Late Arrivals</div>
+                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
+                  </div>
+                  {teacherHRData.notes && (
+                    <div style={{ width: '100%', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>HR Notes</div>
+                      <div style={{ fontSize: '14px', color: 'var(--slate-darker)' }}>{teacherHRData.notes}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div style={{ padding: '0 32px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#15803d', marginBottom: '16px' }}>Identified Strengths <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span></h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#15803d', marginBottom: '16px' }}>
+                  {isCollective ? 'Common Strengths' : 'Identified Strengths'} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span>
+                </h2>
                 {strengths.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {strengths.slice(0, 8).map(s => (
-                      <div key={s.id} style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 18px' }}>
+                      <div key={s.id} style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 18px', breakInside: 'avoid' }}>
                         <div className="frow" style={{ gap: '10px', marginBottom: '6px' }}>
                           <span className="ind-id">{s.id}</span>
-                          <span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '20px', fontWeight: 900, color: '#15803d' }}>{s.score}</span>
+                          <span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '20px', fontWeight: 900, color: '#15803d' }}>{s.score.toFixed(1)}</span>
                         </div>
                         <div style={{ fontSize: '13.5px', color: '#374151', lineHeight: 1.5 }}>{s.text}</div>
                       </div>
@@ -303,14 +364,16 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>No indicators scored 3 or above.</div>}
               </div>
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#dc2626', marginBottom: '16px' }}>Areas for Development <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(1–2)</span></h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#dc2626', marginBottom: '16px' }}>
+                  {isCollective ? 'Common Areas for Development' : 'Areas for Development'} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(1–2)</span>
+                </h2>
                 {imps.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {imps.slice(0, 8).map(s => (
-                      <div key={s.id} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px 18px' }}>
+                      <div key={s.id} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px 18px', breakInside: 'avoid' }}>
                         <div className="frow" style={{ gap: '10px', marginBottom: '6px' }}>
                           <span className="ind-id" style={{ background: 'var(--red)' }}>{s.id}</span>
-                          <span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '20px', fontWeight: 900, color: '#dc2626' }}>{s.score}</span>
+                          <span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '20px', fontWeight: 900, color: '#dc2626' }}>{s.score.toFixed(1)}</span>
                         </div>
                         <div style={{ fontSize: '13.5px', color: '#374151', lineHeight: 1.5 }}>{s.text}</div>
                       </div>
@@ -341,7 +404,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   </thead>
                   <tbody>
                     {[...finals].reverse().map(ev => {
-                      const s = computeScore(ev, state.customWeights);
+                      const teacherHRData = state.hrData?.find(h => h.teacherId === ev.tid);
+                      const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight);
                       const rr = getRating(s);
                       const obs = state.observers.find(o => o.id === ev.oid);
                       return (

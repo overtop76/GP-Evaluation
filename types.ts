@@ -1,11 +1,20 @@
-export type UserRole = 'admin' | 'observer';
+export type UserRole = 'admin' | 'observer' | 'hr';
 
 export interface Teacher {
   id: string;
+  employeeId?: string;
   fullName: string;
   subject: string;
   role: string;
   division: string;
+}
+
+export interface ObserverPermissions {
+  viewScope: 'all' | 'own' | 'stage' | 'subject';
+  allowedStages?: string[];
+  allowedSubjects?: string[];
+  canPrintReports: boolean;
+  canViewReports: boolean;
 }
 
 export interface Observer {
@@ -15,6 +24,7 @@ export interface Observer {
   role: UserRole;
   hash?: string;
   salt?: string;
+  permissions?: ObserverPermissions;
 }
 
 export interface Score {
@@ -44,6 +54,15 @@ export interface Log {
   type: 'CREATE' | 'UPDATE' | 'DELETE' | 'SYSTEM' | 'LOGIN' | 'LOGOUT';
 }
 
+export interface HRData {
+  teacherId: string;
+  absences: number;
+  earlyLeaves: number;
+  lateArrivals: number;
+  notes?: string;
+  lastUpdated: string;
+}
+
 export interface AppState {
   currentUser: Observer | null;
   teachers: Teacher[];
@@ -51,6 +70,8 @@ export interface AppState {
   evaluations: Evaluation[];
   logs: Log[];
   customWeights: Record<string, number[]>;
+  hrData: HRData[];
+  hrWeight: number;
 }
 
 // Rubric Types

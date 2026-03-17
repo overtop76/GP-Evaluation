@@ -1,50 +1,117 @@
 import React, { useState } from 'react';
-import { Observer, UserRole } from '../types';
-import { ini } from '../utils/helpers';
+import { Observer, UserRole, ObserverPermissions } from '../types';
+import { ini, hashPassword } from '../utils/helpers';
+import { SUBJECTS, DIVS } from '../constants';
 
 interface UserManagementProps {
   observers: Observer[];
   currentUser: Observer;
   onAddUser: (user: Observer) => void;
   onDeleteUser: (id: string) => void;
+  onUpdateUser?: (user: Observer) => void;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, onAddUser, onDeleteUser }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, onAddUser, onDeleteUser, onUpdateUser }) => {
   const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<Observer | null>(null);
   const [newName, setNewName] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('observer');
+  
+  // Permissions state
+  const [viewScope, setViewScope] = useState<'all' | 'own' | 'stage' | 'subject'>('all');
+  const [allowedStages, setAllowedStages] = useState<string[]>([]);
+  const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
+  const [canPrintReports, setCanPrintReports] = useState(true);
+  const [canViewReports, setCanViewReports] = useState(true);
 
-  const handleAdd = () => {
-    if (!newName || !newUsername || !newPassword) {
-      alert('Please complete all fields.');
+  const openModal = (user?: Observer) => {
+    if (user) {
+      setEditingUser(user);
+      setNewName(user.name);
+      setNewUsername(user.username);
+      setNewPassword('');
+      setNewRole(user.role);
+      if (user.permissions) {
+        setViewScope(user.permissions.viewScope);
+        setAllowedStages(user.permissions.allowedStages || []);
+        setAllowedSubjects(user.permissions.allowedSubjects || []);
+        setCanPrintReports(user.permissions.canPrintReports);
+        setCanViewReports(user.permissions.canViewReports);
+      } else {
+        setViewScope('all');
+        setAllowedStages([]);
+        setAllowedSubjects([]);
+        setCanPrintReports(true);
+        setCanViewReports(true);
+      }
+    } else {
+      setEditingUser(null);
+      setNewName('');
+      setNewUsername('');
+      setNewPassword('');
+      setNewRole('observer');
+      setViewScope('all');
+      setAllowedStages([]);
+      setAllowedSubjects([]);
+      setCanPrintReports(true);
+      setCanViewReports(true);
+    }
+    setShowModal(true);
+  };
+
+  const handleSave = async () => {
+    if (!newName || !newUsername || (!editingUser && !newPassword)) {
+      alert('Please complete all required fields.');
       return;
     }
-    if (observers.find(o => o.username === newUsername.toLowerCase())) {
+    if (!editingUser && observers.find(o => o.username === newUsername.toLowerCase())) {
       alert('Username already exists.');
       return;
     }
     
-    // In a real app, we would hash here. For this demo, we just store it or leave hash empty as per HTML logic.
-    // The HTML logic generated a hash. We will just simulate it.
-    
-    const newUser: Observer = {
-      id: Date.now().toString(36),
-      name: newName,
-      username: newUsername.toLowerCase(),
-      role: newRole,
-      hash: 'simulated_hash', // In a real app, use crypto.subtle
-      salt: 'simulated_salt'
+    const permissions: ObserverPermissions = {
+      viewScope,
+      allowedStages,
+      allowedSubjects,
+      canPrintReports,
+      canViewReports
     };
-
-    onAddUser(newUser);
+    
+    if (editingUser && onUpdateUser) {
+      let updatedUser = {
+        ...editingUser,
+        name: newName,
+        username: newUsername.toLowerCase(),
+        role: newRole,
+        permissions
+      };
+      
+      if (newPassword) {
+        const salt = Date.now().toString(36);
+        const hash = await hashPassword(newPassword, salt);
+        updatedUser = { ...updatedUser, salt, hash };
+      }
+      
+      onUpdateUser(updatedUser);
+    } else {
+      const salt = Date.now().toString(36);
+      const hash = await hashPassword(newPassword, salt);
+      
+      const newUser: Observer = {
+        id: Date.now().toString(36),
+        name: newName,
+        username: newUsername.toLowerCase(),
+        role: newRole,
+        hash,
+        salt,
+        permissions
+      };
+      onAddUser(newUser);
+    }
     
     setShowModal(false);
-    setNewName('');
-    setNewUsername('');
-    setNewPassword('');
-    setNewRole('observer');
   };
 
   return (
@@ -54,7 +121,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
           <h1 className="ph-title">User Management</h1>
           <p className="ph-sub">Manage observer and administrator accounts.</p>
         </div>
-        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+        <button className="btn btn-primary" onClick={() => openModal()}>
           <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> Add User
         </button>
       </div>
@@ -95,6 +162,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   </div>
                 </td>
                 <td style={{ textAlign: 'right', paddingRight: '24px' }}>
+                  <button className="icon-btn" onClick={() => openModal(o)} title="Edit User">
+                    <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--blue)' }}>edit</span>
+                  </button>
                   <button className="icon-btn" onClick={() => {
                     if (o.id === currentUser.id) {
                       alert('You cannot delete your own account.');
@@ -115,8 +185,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
 
       {showModal && (
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className="mbox">
-            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>Add New User</h2>
+          <div className="mbox" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>
+              {editingUser ? 'Edit User' : 'Add New User'}
+            </h2>
             <div className="field">
               <label className="flabel">Full Name</label>
               <input className="finput" placeholder="e.g. Dr. John Smith" value={newName} onChange={e => setNewName(e.target.value)} />
@@ -124,10 +196,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
             <div className="g2">
               <div className="field">
                 <label className="flabel">Username</label>
-                <input className="finput" placeholder="e.g. jsmith" value={newUsername} onChange={e => setNewUsername(e.target.value)} />
+                <input className="finput" placeholder="e.g. jsmith" value={newUsername} onChange={e => setNewUsername(e.target.value)} disabled={!!editingUser} />
               </div>
               <div className="field">
-                <label className="flabel">Password</label>
+                <label className="flabel">Password {editingUser && '(Leave blank to keep current)'}</label>
                 <input className="finput" type="password" placeholder="Min. 8 characters" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
               </div>
             </div>
@@ -150,10 +222,80 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 </label>
               </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
+            
+            {newRole === 'observer' && (
+              <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>Observer Permissions</h3>
+                
+                <div className="field">
+                  <label className="flabel">View Scope</label>
+                  <select className="finput" value={viewScope} onChange={e => setViewScope(e.target.value as any)}>
+                    <option value="all">All Observations</option>
+                    <option value="own">Only Own Observations</option>
+                    <option value="stage">Specific Stages</option>
+                    <option value="subject">Specific Subjects</option>
+                  </select>
+                </div>
+                
+                {viewScope === 'stage' && (
+                  <div className="field">
+                    <label className="flabel">Allowed Stages</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {DIVS.map(div => (
+                        <label key={div} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={allowedStages.includes(div)} 
+                            onChange={e => {
+                              if (e.target.checked) setAllowedStages([...allowedStages, div]);
+                              else setAllowedStages(allowedStages.filter(d => d !== div));
+                            }} 
+                          />
+                          <span style={{ fontSize: '13px' }}>{div}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {viewScope === 'subject' && (
+                  <div className="field">
+                    <label className="flabel">Allowed Subjects</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {SUBJECTS.map(sub => (
+                        <label key={sub} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={allowedSubjects.includes(sub)} 
+                            onChange={e => {
+                              if (e.target.checked) setAllowedSubjects([...allowedSubjects, sub]);
+                              else setAllowedSubjects(allowedSubjects.filter(s => s !== sub));
+                            }} 
+                          />
+                          <span style={{ fontSize: '13px' }}>{sub}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="g2">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={canViewReports} onChange={e => setCanViewReports(e.target.checked)} />
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>Can View Reports</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={canPrintReports} onChange={e => setCanPrintReports(e.target.checked)} />
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>Can Print Reports</span>
+                  </label>
+                </div>
+              </div>
+            )}
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
               <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="btn btn-primary" onClick={handleAdd}>
-                <span className="material-icons" style={{ fontSize: '16px' }}>check</span> Create Account
+              <button className="btn btn-primary" onClick={handleSave}>
+                <span className="material-icons" style={{ fontSize: '16px' }}>check</span> {editingUser ? 'Save Changes' : 'Create Account'}
               </button>
             </div>
           </div>

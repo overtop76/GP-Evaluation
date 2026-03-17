@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Observer } from '../types';
-import { uid } from '../utils/helpers';
+import { uid, hashPassword } from '../utils/helpers';
 
 interface LoginProps {
   observers: Observer[];
@@ -23,14 +23,18 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin }) => {
 
     const user = observers.find(o => o.username.toLowerCase() === username.toLowerCase());
     
-    // In a real app, we would hash the password and compare.
-    // For this demo/prototype based on the HTML, we accept any password if the user exists and has no hash,
-    // or if the hash matches (but we don't have the hash logic fully ported from the HTML's crypto.subtle).
-    // The HTML logic was: if(!user.hash) ok=true; else check hash.
-    // Since we are initializing with demo users who have empty hashes, any password works.
-    
     if (user) {
-      onLogin(user);
+      if (!user.hash) {
+        // For demo users without a hash, let them in
+        onLogin(user);
+      } else {
+        const hashed = await hashPassword(password, user.salt || 'default_salt');
+        if (hashed === user.hash) {
+          onLogin(user);
+        } else {
+          setError('Invalid credentials. Please try again.');
+        }
+      }
     } else {
       setError('Invalid credentials. Please try again.');
     }
@@ -115,6 +119,7 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin }) => {
             <div className="demo-row">
               <div className="demo-pill"><div className="demo-pl">Admin</div><div className="demo-pv">admin / any password</div></div>
               <div className="demo-pill"><div className="demo-pl">Observer</div><div className="demo-pv">observer / any</div></div>
+              <div className="demo-pill"><div className="demo-pl">HR</div><div className="demo-pv">hr@globalparadigmschools.com / any</div></div>
             </div>
           </div>
         </div>

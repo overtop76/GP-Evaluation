@@ -40,7 +40,7 @@ export const countInds = (type: string): number => {
   return (RUBRIC_DEF[type] || []).reduce((a, d) => a + d.subdomains.reduce((b, s) => b + s.indicators.length, 0), 0);
 };
 
-export const computeScore = (ev: Evaluation, customWeights?: Record<string, number[]>): number => {
+export const computeScore = (ev: Evaluation, customWeights?: Record<string, number[]>, hrData?: any, hrWeight?: number): number => {
   const r = getRubric(ev.type, customWeights);
   if (!r || !ev.scores || !ev.scores.length) return 0;
   
@@ -61,17 +61,33 @@ export const computeScore = (ev: Evaluation, customWeights?: Record<string, numb
       wt += d.weight;
     }
   });
+  
+  if (hrData && hrWeight !== undefined && hrWeight > 0) {
+    const abs = hrData.absences ?? 0;
+    const el = hrData.earlyLeaves ?? 0;
+    const la = hrData.lateArrivals ?? 0;
+    const totalDeductions = abs + (el * 0.5) + (la * 0.5);
+    let hrScore = 4;
+    if (totalDeductions === 0) hrScore = 4;
+    else if (totalDeductions <= 2) hrScore = 3;
+    else if (totalDeductions <= 5) hrScore = 2;
+    else hrScore = 1;
+    
+    ws += hrScore * hrWeight;
+    wt += hrWeight;
+  }
+  
   return wt > 0 ? ws / wt : 0;
 };
 
-export const getDomainScores = (ev: Evaluation, customWeights?: Record<string, number[]>) => {
+export const getDomainScores = (ev: Evaluation, customWeights?: Record<string, number[]>, hrData?: any, hrWeight?: number) => {
   const r = getRubric(ev.type, customWeights);
   if (!r) return [];
   
   const sm: Record<string, number> = {};
   ev.scores.forEach(s => sm[s.id] = s.score);
   
-  return r.map(d => {
+  const scores = r.map(d => {
     let ds = 0, dc = 0;
     d.subdomains.forEach(s => s.indicators.forEach(i => {
       if (sm[i.id] !== undefined) {
@@ -87,6 +103,28 @@ export const getDomainScores = (ev: Evaluation, customWeights?: Record<string, n
       total: d.subdomains.reduce((a, s) => a + s.indicators.length, 0)
     };
   });
+  
+  if (hrData && hrWeight !== undefined && hrWeight > 0) {
+    const abs = hrData.absences ?? 0;
+    const el = hrData.earlyLeaves ?? 0;
+    const la = hrData.lateArrivals ?? 0;
+    const totalDeductions = abs + (el * 0.5) + (la * 0.5);
+    let hrScore = 4;
+    if (totalDeductions === 0) hrScore = 4;
+    else if (totalDeductions <= 2) hrScore = 3;
+    else if (totalDeductions <= 5) hrScore = 2;
+    else hrScore = 1;
+    
+    scores.push({
+      name: 'D-HR: Attendance & Punctuality',
+      weight: hrWeight,
+      avg: hrScore,
+      scored: 1,
+      total: 1
+    });
+  }
+  
+  return scores;
 };
 
 export const findInd = (type: string, id: string) => {
@@ -98,4 +136,29 @@ export const findInd = (type: string, id: string) => {
     }
   }
   return null;
+};
+
+export const hashPassword = async (password: string, salt: string): Promise<string> => {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits', 'deriveKey']
+  );
+  const key = await crypto.subtle.deriveKey(
+    {
+      name: 'PBKDF2',
+      salt: enc.encode(salt),
+      iterations: 100000,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    true,
+    ['encrypt', 'decrypt']
+  );
+  const exported = await crypto.subtle.exportKey('raw', key);
+  return Array.from(new Uint8Array(exported)).map(b => b.toString(16).padStart(2, '0')).join('');
 };

@@ -9,9 +9,10 @@ import Report from './components/Report';
 import Settings from './components/Settings';
 import UserManagement from './components/UserManagement';
 import AuditLog from './components/AuditLog';
+import HRAttendance from './components/HRAttendance';
 
 const AppContent: React.FC = () => {
-  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, deleteUser, updateWeights, resetWeights, resetSystem, toasts } = useApp();
+  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, toasts } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evalParams, setEvalParams] = useState<any>({});
 
@@ -25,6 +26,31 @@ const AppContent: React.FC = () => {
     return <Login observers={state.observers} onLogin={login} />;
   }
 
+  // HR users see only the HR Attendance page
+  if (state.currentUser.role === 'hr') {
+    return (
+      <div id="app-wrap" className="on">
+        <Sidebar 
+          activeTab="hr" 
+          setActiveTab={() => {}} 
+          userRole={state.currentUser.role} 
+          userName={state.currentUser.name}
+          onLogout={logout}
+        />
+        <div id="main">
+          <HRAttendance />
+        </div>
+        <div id="toasts">
+          {toasts.map(t => (
+            <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
+              {t.msg}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -34,6 +60,8 @@ const AppContent: React.FC = () => {
           teachers={state.teachers} 
           evaluations={state.evaluations} 
           customWeights={state.customWeights}
+          hrData={state.hrData}
+          hrWeight={state.hrWeight}
           onAddTeacher={addTeacher} 
           onDeleteTeacher={deleteTeacher} 
           onNavigate={handleNavigate} 
@@ -47,6 +75,7 @@ const AppContent: React.FC = () => {
           observers={state.observers} 
           customWeights={state.customWeights}
           initialData={initialEval}
+          currentUser={state.currentUser}
           onSave={saveEvaluation} 
           onCancel={() => setActiveTab('dashboard')} 
         />;
@@ -62,10 +91,13 @@ const AppContent: React.FC = () => {
           observers={state.observers} 
           currentUser={state.currentUser} 
           onAddUser={addUser} 
+          onUpdateUser={updateUser}
           onDeleteUser={deleteUser} 
         />;
       case 'audit':
         return <AuditLog logs={state.logs} />;
+      case 'hr':
+        return <HRAttendance />;
       case 'settings':
         return <Settings 
           state={state} 
