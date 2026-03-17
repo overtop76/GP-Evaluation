@@ -29,7 +29,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     if (!state.currentUser?.permissions) return true;
     
     const p = state.currentUser.permissions;
-    if (p.viewScope === 'own' && e.oid !== state.currentUser.id) return false;
+    if (p.viewScopes.includes('all')) return true;
+    if (p.viewScopes.includes('own') && e.oid !== state.currentUser.id) return false;
     
     return true;
   });
@@ -169,7 +170,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '160px' }}>
           <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="End Date" />
         </div>
-        {(!state.currentUser?.permissions || state.currentUser.permissions.viewScope !== 'own') && (
+        {(!state.currentUser?.permissions || !state.currentUser.permissions.viewScopes.includes('own')) && (
           <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '200px' }}>
             <select className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={observerFilter} onChange={e => setObserverFilter(e.target.value)}>
               <option value="">All Observers</option>

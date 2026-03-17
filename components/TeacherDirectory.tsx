@@ -32,10 +32,16 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
     if (!currentUser?.permissions) return true;
     
     const p = currentUser.permissions;
-    if (p.viewScope === 'all' || p.viewScope === 'own') return true;
-    if (p.viewScope === 'stage' && p.allowedStages?.includes(t.division)) return true;
-    if (p.viewScope === 'subject' && p.allowedSubjects?.includes(t.subject)) return true;
-    return false;
+    if (p.viewScopes.includes('all')) return true;
+    
+    let match = true;
+    if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
+      if (!p.allowedStages.includes(t.division)) match = false;
+    }
+    if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
+      if (!p.allowedSubjects.includes(t.subject)) match = false;
+    }
+    return match;
   });
 
   const filteredTeachers = allowedTeachers.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase()));

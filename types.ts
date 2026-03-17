@@ -10,7 +10,7 @@ export interface Teacher {
 }
 
 export interface ObserverPermissions {
-  viewScope: 'all' | 'own' | 'stage' | 'subject';
+  viewScopes: ('all' | 'own' | 'stage' | 'subject')[];
   allowedStages?: string[];
   allowedSubjects?: string[];
   canPrintReports: boolean;

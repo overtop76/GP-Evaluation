@@ -19,10 +19,23 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     if (!currentUser?.permissions) return true; // Default to all if no permissions set
     
     const p = currentUser.permissions;
-    if (p.viewScope === 'all' || p.viewScope === 'own') return true; // 'own' is filtered at evaluation level, but they can see the teacher
-    if (p.viewScope === 'stage' && p.allowedStages?.includes(t.division)) return true;
-    if (p.viewScope === 'subject' && p.allowedSubjects?.includes(t.subject)) return true;
-    return false;
+    if (p.viewScopes.includes('all')) return true;
+    
+    let match = true;
+    if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
+      if (!p.allowedStages.includes(t.division)) match = false;
+    }
+    if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
+      if (!p.allowedSubjects.includes(t.subject)) match = false;
+    }
+    
+    // If no specific filters selected but scope is set, it might be restrictive
+    if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && !p.viewScopes.includes('own')) {
+       // if they only have 'all' it's handled above. 
+       // if they have nothing, maybe default to true or false?
+    }
+
+    return match;
   });
   
   const allowedTeacherIds = new Set(allowedTeachers.map(t => t.id));
@@ -32,7 +45,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     if (!currentUser?.permissions) return true;
     
     const p = currentUser.permissions;
-    if (p.viewScope === 'own' && e.oid !== currentUser.id) return false;
+    if (p.viewScopes.includes('all')) return true;
+    if (p.viewScopes.includes('own') && e.oid !== currentUser.id) return false;
     if (!allowedTeacherIds.has(e.tid)) return false;
     return true;
   });

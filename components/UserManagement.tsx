@@ -20,7 +20,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   const [newRole, setNewRole] = useState<UserRole>('observer');
   
   // Permissions state
-  const [viewScope, setViewScope] = useState<'all' | 'own' | 'stage' | 'subject'>('all');
+  const [viewScopes, setViewScopes] = useState<('all' | 'own' | 'stage' | 'subject')[]>(['all']);
   const [allowedStages, setAllowedStages] = useState<string[]>([]);
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
   const [canPrintReports, setCanPrintReports] = useState(true);
@@ -34,13 +34,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       setNewPassword('');
       setNewRole(user.role);
       if (user.permissions) {
-        setViewScope(user.permissions.viewScope);
+        setViewScopes(user.permissions.viewScopes || ['all']);
         setAllowedStages(user.permissions.allowedStages || []);
         setAllowedSubjects(user.permissions.allowedSubjects || []);
         setCanPrintReports(user.permissions.canPrintReports);
         setCanViewReports(user.permissions.canViewReports);
       } else {
-        setViewScope('all');
+        setViewScopes(['all']);
         setAllowedStages([]);
         setAllowedSubjects([]);
         setCanPrintReports(true);
@@ -52,7 +52,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       setNewUsername('');
       setNewPassword('');
       setNewRole('observer');
-      setViewScope('all');
+      setViewScopes(['all']);
       setAllowedStages([]);
       setAllowedSubjects([]);
       setCanPrintReports(true);
@@ -72,7 +72,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     }
     
     const permissions: ObserverPermissions = {
-      viewScope,
+      viewScopes,
       allowedStages,
       allowedSubjects,
       canPrintReports,
@@ -228,16 +228,37 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>Observer Permissions</h3>
                 
                 <div className="field">
-                  <label className="flabel">View Scope</label>
-                  <select className="finput" value={viewScope} onChange={e => setViewScope(e.target.value as any)}>
-                    <option value="all">All Observations</option>
-                    <option value="own">Only Own Observations</option>
-                    <option value="stage">Specific Stages</option>
-                    <option value="subject">Specific Subjects</option>
-                  </select>
+                  <label className="flabel">View Scopes (Select one or more)</label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
+                    {[
+                      { id: 'all', label: 'All Observations' },
+                      { id: 'own', label: 'Only Own Observations' },
+                      { id: 'stage', label: 'Specific Stages' },
+                      { id: 'subject', label: 'Specific Subjects' }
+                    ].map(scope => (
+                      <label key={scope.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg)', border: `1px solid ${viewScopes.includes(scope.id as any) ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                        <input 
+                          type="checkbox" 
+                          checked={viewScopes.includes(scope.id as any)} 
+                          onChange={e => {
+                            const sid = scope.id as any;
+                            if (e.target.checked) {
+                              if (sid === 'all') setViewScopes(['all']);
+                              else setViewScopes([...viewScopes.filter(s => s !== 'all'), sid]);
+                            } else {
+                              const next = viewScopes.filter(s => s !== sid);
+                              setViewScopes(next.length ? next : ['all']);
+                            }
+                          }}
+                          style={{ accentColor: 'var(--blue)' }}
+                        />
+                        <span style={{ fontSize: '13px', fontWeight: 600 }}>{scope.label}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
                 
-                {viewScope === 'stage' && (
+                {viewScopes.includes('stage') && (
                   <div className="field">
                     <label className="flabel">Allowed Stages</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
@@ -258,7 +279,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   </div>
                 )}
                 
-                {viewScope === 'subject' && (
+                {viewScopes.includes('subject') && (
                   <div className="field">
                     <label className="flabel">Allowed Subjects</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
