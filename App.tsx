@@ -62,6 +62,7 @@ const AppContent: React.FC = () => {
           customWeights={state.customWeights}
           hrData={state.hrData}
           hrWeight={state.hrWeight}
+          currentUser={state.currentUser!}
           onAddTeacher={addTeacher} 
           onDeleteTeacher={deleteTeacher} 
           onNavigate={handleNavigate} 
@@ -75,7 +76,7 @@ const AppContent: React.FC = () => {
           observers={state.observers} 
           customWeights={state.customWeights}
           initialData={initialEval}
-          currentUser={state.currentUser}
+          currentUser={state.currentUser!}
           onSave={saveEvaluation} 
           onCancel={() => setActiveTab('dashboard')} 
         />;
@@ -89,7 +90,7 @@ const AppContent: React.FC = () => {
       case 'observers':
         return <UserManagement 
           observers={state.observers} 
-          currentUser={state.currentUser} 
+          currentUser={state.currentUser!} 
           onAddUser={addUser} 
           onUpdateUser={updateUser}
           onDeleteUser={deleteUser} 
@@ -115,8 +116,8 @@ const AppContent: React.FC = () => {
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
-        userRole={state.currentUser.role} 
-        userName={state.currentUser.name}
+        userRole={state.currentUser!.role} 
+        userName={state.currentUser!.name}
         onLogout={logout}
       />
       <div id="main">
