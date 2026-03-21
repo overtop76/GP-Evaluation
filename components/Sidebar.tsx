@@ -30,9 +30,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, us
     <div className="sidebar no-print flex flex-col h-screen">
       <div className="sb-head shrink-0">
         <div className="sb-logo">
-          <div className="sb-ico"><span className="material-icons" style={{ color: '#fff', fontSize: '18px' }}>school</span></div>
+          <img 
+            src="https://picsum.photos/seed/global-paradigm/100/100" 
+            alt="GP Logo" 
+            referrerPolicy="no-referrer"
+            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }}
+          />
           <div>
-            <div className="sb-title">GP Eval</div>
+            <div className="sb-title">Global Paradigm</div>
             <div className="sb-ver">System v4.0</div>
           </div>
         </div>

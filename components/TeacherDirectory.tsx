@@ -111,6 +111,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
             <thead>
               <tr>
                 <th style={{ paddingLeft: '24px' }}>Name</th>
+                <th>Employee ID</th>
                 <th>Role</th>
                 <th>Subject</th>
                 <th>Division</th>
@@ -134,6 +135,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                         <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{t.fullName}</span>
                       </div>
                     </td>
+                    <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{t.employeeId || '—'}</span></td>
                     <td><span style={{ background: 'var(--bg)', color: 'var(--slate-dark)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', padding: '4px 10px', borderRadius: '8px' }}>{t.role}</span></td>
                     <td style={{ color: 'var(--slate)', fontWeight: 500, fontSize: '13.5px' }}>{t.subject}</td>
                     <td><span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#1d4ed8', fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '4px 10px', borderRadius: '20px' }}>{t.division}</span></td>

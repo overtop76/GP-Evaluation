@@ -57,10 +57,17 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         <div className="card-xl" style={{ overflow: 'hidden', marginBottom: '24px' }}>
           <div className="rep-hdr">
             <div className="frow" style={{ gap: '20px' }}>
-              <div className="av" style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,.15)', borderRadius: '16px', fontSize: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>{ini(teacher.fullName)}</div>
+              <img 
+                src="https://picsum.photos/seed/global-paradigm/200/200" 
+                alt="GP Logo" 
+                referrerPolicy="no-referrer"
+                style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,.15)', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', objectFit: 'cover' }}
+              />
               <div>
                 <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '36px', fontWeight: 900, color: '#fff', letterSpacing: '.02em', lineHeight: 1 }}>{teacher.fullName}</div>
-                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>Performance Evaluation Report · Global Paradigm International School</div>
+                <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>
+                  Employee ID: {teacher.employeeId || 'N/A'} · Performance Evaluation Report · Global Paradigm International School
+                </div>
               </div>
             </div>
           </div>
@@ -188,10 +195,17 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
       <div className="card-xl" style={{ overflow: 'hidden', marginBottom: '24px' }}>
         <div className="rep-hdr">
           <div className="frow" style={{ gap: '20px' }}>
-            <div className="av" style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,.15)', borderRadius: '16px', fontSize: '20px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>{ini(teacher.fullName)}</div>
+            <img 
+              src="https://picsum.photos/seed/global-paradigm/200/200" 
+              alt="GP Logo" 
+              referrerPolicy="no-referrer"
+              style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,.15)', borderRadius: '16px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', objectFit: 'cover' }}
+            />
             <div>
               <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '36px', fontWeight: 900, color: '#fff', letterSpacing: '.02em', lineHeight: 1 }}>{teacher.fullName}</div>
-              <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>Performance Evaluation Report · Global Paradigm International School</div>
+              <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>
+                Employee ID: {teacher.employeeId || 'N/A'} · Performance Evaluation Report · Global Paradigm International School
+              </div>
             </div>
           </div>
         </div>

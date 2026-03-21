@@ -15,6 +15,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Observer | null>(null);
   const [newName, setNewName] = useState('');
+  const [newEmployeeId, setNewEmployeeId] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newRole, setNewRole] = useState<UserRole>('observer');
@@ -30,6 +31,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     if (user) {
       setEditingUser(user);
       setNewName(user.name);
+      setNewEmployeeId(user.employeeId || '');
       setNewUsername(user.username);
       setNewPassword('');
       setNewRole(user.role);
@@ -49,6 +51,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     } else {
       setEditingUser(null);
       setNewName('');
+      setNewEmployeeId('');
       setNewUsername('');
       setNewPassword('');
       setNewRole('observer');
@@ -62,12 +65,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   };
 
   const handleSave = async () => {
-    if (!newName || !newUsername || (!editingUser && !newPassword)) {
+    if (!newName || !newEmployeeId || !newUsername || (!editingUser && !newPassword)) {
       alert('Please complete all required fields.');
       return;
     }
     if (!editingUser && observers.find(o => o.username === newUsername.toLowerCase())) {
       alert('Username already exists.');
+      return;
+    }
+    
+    // Check if employee ID is unique
+    if (observers.some(o => o.employeeId === newEmployeeId && o.id !== editingUser?.id)) {
+      alert('Employee Number must be unique.');
       return;
     }
     
@@ -83,6 +92,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       let updatedUser = {
         ...editingUser,
         name: newName,
+        employeeId: newEmployeeId,
         username: newUsername.toLowerCase(),
         role: newRole,
         permissions
@@ -101,6 +111,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       
       const newUser: Observer = {
         id: Date.now().toString(36),
+        employeeId: newEmployeeId,
         name: newName,
         username: newUsername.toLowerCase(),
         role: newRole,
@@ -131,6 +142,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
           <thead>
             <tr>
               <th style={{ paddingLeft: '24px' }}>Name</th>
+              <th>Employee ID</th>
               <th>Username</th>
               <th>Role</th>
               <th>Status</th>
@@ -149,6 +161,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                     </div>
                   </div>
                 </td>
+                <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{o.employeeId || '—'}</span></td>
                 <td><span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '13px', color: 'var(--slate-dark)', background: 'var(--bg)', padding: '4px 8px', borderRadius: '6px' }}>@{o.username}</span></td>
                 <td>
                   <span className="badge" style={{ background: o.role === 'admin' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(37, 99, 235, 0.1)', color: o.role === 'admin' ? '#7c3aed' : '#2563eb', borderColor: o.role === 'admin' ? '#e9d5ff' : '#bfdbfe' }}>
@@ -189,9 +202,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>
               {editingUser ? 'Edit User' : 'Add New User'}
             </h2>
-            <div className="field">
-              <label className="flabel">Full Name</label>
-              <input className="finput" placeholder="e.g. Dr. John Smith" value={newName} onChange={e => setNewName(e.target.value)} />
+            <div className="g2">
+              <div className="field">
+                <label className="flabel">Full Name</label>
+                <input className="finput" placeholder="e.g. Dr. John Smith" value={newName} onChange={e => setNewName(e.target.value)} />
+              </div>
+              <div className="field">
+                <label className="flabel">Employee Number</label>
+                <input className="finput" placeholder="Unique ID" value={newEmployeeId} onChange={e => setNewEmployeeId(e.target.value)} />
+              </div>
             </div>
             <div className="g2">
               <div className="field">

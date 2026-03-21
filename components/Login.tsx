@@ -45,7 +45,12 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin }) => {
     <div id="login-wrap" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-bg)', padding: '20px' }}>
       <div className="login-card">
         <div className="lhead">
-          <div className="lico"><span className="material-icons" style={{ color: '#fff', fontSize: '26px' }}>school</span></div>
+          <img 
+            src="https://picsum.photos/seed/global-paradigm/200/200" 
+            alt="Global Paradigm Logo" 
+            referrerPolicy="no-referrer"
+            style={{ width: '80px', height: '80px', marginBottom: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+          />
           <div className="ltitle">Global Paradigm</div>
           <div className="lsub">Evaluation & Accreditation System</div>
         </div>

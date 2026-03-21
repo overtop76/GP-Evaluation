@@ -5,15 +5,15 @@ import { uid } from '../utils/helpers';
 const INIT_STATE: AppState = {
   currentUser: null,
   teachers: [
-    { id: 't1', fullName: 'Edna Krabappel', subject: 'Homeroom', role: 'Homeroom Teacher', division: 'Elementary' },
-    { id: 't2', fullName: 'Elizabeth Hoover', subject: 'Mathematics', role: 'Co-Teacher', division: 'Elementary, Middle' },
-    { id: 't3', fullName: 'Dewey Largo', subject: 'Music', role: 'HOD', division: 'Middle, High' },
-    { id: 't4', fullName: 'Robert Terwilliger', subject: 'Social Studies', role: 'Teacher', division: 'High' },
+    { id: 't1', employeeId: 'GP-1001', fullName: 'Edna Krabappel', subject: 'Homeroom', role: 'Homeroom Teacher', division: 'Elementary' },
+    { id: 't2', employeeId: 'GP-1002', fullName: 'Elizabeth Hoover', subject: 'Mathematics', role: 'Co-Teacher', division: 'Elementary, Middle' },
+    { id: 't3', employeeId: 'GP-1003', fullName: 'Dewey Largo', subject: 'Music', role: 'HOD', division: 'Middle, High' },
+    { id: 't4', employeeId: 'GP-1004', fullName: 'Robert Terwilliger', subject: 'Social Studies', role: 'Teacher', division: 'High' },
   ],
   observers: [
-    { id: 'o1', name: 'System Administrator', username: 'admin', role: 'admin', hash: '', salt: '' },
-    { id: 'o2', name: 'Principal Skinner', username: 'observer', role: 'observer', hash: '', salt: '' },
-    { id: 'o3', name: 'HR Department', username: 'hr@globalparadigmschools.com', role: 'hr', hash: '', salt: '' },
+    { id: 'o1', employeeId: 'ADM-001', name: 'System Administrator', username: 'admin', role: 'admin', hash: '', salt: '' },
+    { id: 'o2', employeeId: 'OBS-001', name: 'Principal Skinner', username: 'observer', role: 'observer', hash: '', salt: '' },
+    { id: 'o3', employeeId: 'HR-001', name: 'HR Department', username: 'hr@globalparadigmschools.com', role: 'hr', hash: '', salt: '' },
   ],
   evaluations: [],
   logs: [],

@@ -19,6 +19,7 @@ export interface ObserverPermissions {
 
 export interface Observer {
   id: string;
+  employeeId?: string;
   name: string;
   username: string;
   role: UserRole;
