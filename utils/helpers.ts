@@ -40,6 +40,20 @@ export const countInds = (type: string): number => {
   return (RUBRIC_DEF[type] || []).reduce((a, d) => a + d.subdomains.reduce((b, s) => b + s.indicators.length, 0), 0);
 };
 
+export const getHRScore = (type: 'absences' | 'earlyLeaves' | 'lateArrivals', value: number): number => {
+  if (type === 'absences') {
+    if (value <= 2) return 4;
+    if (value <= 5) return 3;
+    if (value <= 9) return 2;
+    return 1;
+  } else {
+    if (value <= 2) return 4;
+    if (value <= 4) return 3;
+    if (value <= 7) return 2;
+    return 1;
+  }
+};
+
 export const computeScore = (ev: Evaluation, customWeights?: Record<string, number[]>, hrData?: any, hrWeight?: number): number => {
   const r = getRubric(ev.type, customWeights);
   if (!r || !ev.scores || !ev.scores.length) return 0;
@@ -63,15 +77,10 @@ export const computeScore = (ev: Evaluation, customWeights?: Record<string, numb
   });
   
   if (hrData && hrWeight !== undefined && hrWeight > 0) {
-    const abs = hrData.absences ?? 0;
-    const el = hrData.earlyLeaves ?? 0;
-    const la = hrData.lateArrivals ?? 0;
-    const totalDeductions = abs + (el * 0.5) + (la * 0.5);
-    let hrScore = 4;
-    if (totalDeductions === 0) hrScore = 4;
-    else if (totalDeductions <= 2) hrScore = 3;
-    else if (totalDeductions <= 5) hrScore = 2;
-    else hrScore = 1;
+    const s1 = getHRScore('absences', hrData.absences ?? 0);
+    const s2 = getHRScore('earlyLeaves', hrData.earlyLeaves ?? 0);
+    const s3 = getHRScore('lateArrivals', hrData.lateArrivals ?? 0);
+    const hrScore = (s1 + s2 + s3) / 3;
     
     ws += hrScore * hrWeight;
     wt += hrWeight;
@@ -105,15 +114,10 @@ export const getDomainScores = (ev: Evaluation, customWeights?: Record<string, n
   });
   
   if (hrData && hrWeight !== undefined && hrWeight > 0) {
-    const abs = hrData.absences ?? 0;
-    const el = hrData.earlyLeaves ?? 0;
-    const la = hrData.lateArrivals ?? 0;
-    const totalDeductions = abs + (el * 0.5) + (la * 0.5);
-    let hrScore = 4;
-    if (totalDeductions === 0) hrScore = 4;
-    else if (totalDeductions <= 2) hrScore = 3;
-    else if (totalDeductions <= 5) hrScore = 2;
-    else hrScore = 1;
+    const s1 = getHRScore('absences', hrData.absences ?? 0);
+    const s2 = getHRScore('earlyLeaves', hrData.earlyLeaves ?? 0);
+    const s3 = getHRScore('lateArrivals', hrData.lateArrivals ?? 0);
+    const hrScore = (s1 + s2 + s3) / 3;
     
     scores.push({
       name: 'D-HR: Attendance & Punctuality',

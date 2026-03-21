@@ -30,24 +30,31 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, us
     <div className="sidebar no-print flex flex-col h-screen">
       <div className="sb-head shrink-0">
         <div className="sb-logo">
-          <img 
-            src="https://picsum.photos/seed/global-paradigm/100/100" 
-            alt="GP Logo" 
-            referrerPolicy="no-referrer"
-            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }}
-          />
+          <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #2563eb, #7c3aed)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)' }}>
+            <span className="material-icons" style={{ fontSize: '24px' }}>school</span>
+          </div>
           <div>
-            <div className="sb-title">Global Paradigm</div>
-            <div className="sb-ver">System v4.0</div>
+            <div className="sb-title" style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '18px', fontWeight: 900, letterSpacing: '0.02em' }}>GLOBAL PARADIGM</div>
+            <div className="sb-ver" style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Evaluation System v4.2</div>
           </div>
         </div>
       </div>
-      <nav className="sb-nav flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
+      <nav className="sb-nav flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', padding: '20px 12px' }}>
         {userRole === 'hr' ? (
           <>
             <div className="sb-sec">HR Portal</div>
             <button className={`nav-btn ${activeTab === 'hr' ? 'active' : ''}`} onClick={() => setActiveTab('hr')}>
               <span className="material-icons-outlined mi">event_available</span>HR Attendance
+            </button>
+          </>
+        ) : userRole === 'teacher' ? (
+          <>
+            <div className="sb-sec">My Portal</div>
+            <button className={`nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+              <span className="material-icons-outlined mi">grid_view</span>My Overview
+            </button>
+            <button className={`nav-btn ${activeTab === 'report' ? 'active' : ''}`} onClick={() => setActiveTab('report')}>
+              <span className="material-icons-outlined mi">bar_chart</span>My Reports
             </button>
           </>
         ) : (
@@ -57,44 +64,49 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, us
               <span className="material-icons-outlined mi">grid_view</span>Dashboard
             </button>
             <button className={`nav-btn ${activeTab === 'teachers' ? 'active' : ''}`} onClick={() => setActiveTab('teachers')}>
-              <span className="material-icons-outlined mi">group</span>Faculty
+              <span className="material-icons-outlined mi">group</span>Faculty Directory
+            </button>
+            <button className={`nav-btn ${activeTab === 'evaluations' ? 'active' : ''}`} onClick={() => setActiveTab('evaluations')}>
+              <span className="material-icons-outlined mi">history_edu</span>Evaluation History
             </button>
             <button className={`nav-btn ${activeTab === 'evaluate' ? 'active' : ''}`} onClick={() => setActiveTab('evaluate')}>
-              <span className="material-icons-outlined mi">assignment</span>New Evaluation
+              <span className="material-icons-outlined mi">assignment_add</span>New Evaluation
             </button>
             {isAdmin && (
               <>
-                <div className="sb-sec">Admin</div>
+                <div className="sb-sec">Administration</div>
                 <button className={`nav-btn ${activeTab === 'hr' ? 'active' : ''}`} onClick={() => setActiveTab('hr')}>
                   <span className="material-icons-outlined mi">event_available</span>HR Attendance
                 </button>
                 <button className={`nav-btn ${activeTab === 'observers' ? 'active' : ''}`} onClick={() => setActiveTab('observers')}>
-                  <span className="material-icons-outlined mi">manage_accounts</span>Users
+                  <span className="material-icons-outlined mi">manage_accounts</span>User Management
                 </button>
                 <button className={`nav-btn ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>
-                  <span className="material-icons-outlined mi">history</span>Audit Log
+                  <span className="material-icons-outlined mi">history</span>System Audit Log
                 </button>
                 <button className={`nav-btn ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
-                  <span className="material-icons-outlined mi">tune</span>Settings
+                  <span className="material-icons-outlined mi">tune</span>System Settings
                 </button>
               </>
             )}
           </>
         )}
       </nav>
-      <div className="sb-foot shrink-0">
-        <div className="sb-user">
-          <div className="sb-av">{ini(userName)}</div>
+      <div className="sb-foot shrink-0" style={{ padding: '16px' }}>
+        <div className="sb-user" style={{ background: 'var(--bg)', borderRadius: '16px', padding: '12px' }}>
+          <div className="sb-av" style={{ background: 'var(--navy)', color: 'white', fontWeight: 900 }}>{ini(userName)}</div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <div className="sb-uname">{userName}</div>
-            <div className="sb-urole">{userRole}</div>
+            <div className="sb-uname" style={{ fontSize: '13px', fontWeight: 800 }}>{userName}</div>
+            <div className="sb-urole" style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)' }}>{userRole}</div>
           </div>
-          <button className="logout-btn" onClick={() => setDarkMode(!darkMode)} title="Toggle Theme">
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
-          </button>
-          <button className="logout-btn" onClick={onLogout} title="Logout">
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>logout</span>
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <button className="logout-btn" onClick={() => setDarkMode(!darkMode)} title="Toggle Theme" style={{ width: '28px', height: '28px' }}>
+              <span className="material-icons-outlined" style={{ fontSize: '16px' }}>{darkMode ? 'light_mode' : 'dark_mode'}</span>
+            </button>
+            <button className="logout-btn" onClick={onLogout} title="Logout" style={{ width: '28px', height: '28px', color: '#ef4444' }}>
+              <span className="material-icons-outlined" style={{ fontSize: '16px' }}>logout</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

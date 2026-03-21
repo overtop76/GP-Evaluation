@@ -1,8 +1,8 @@
 import React from 'react';
 import { AppState } from '../types';
-import { computeScore, getRating, countInds, fmtD, ini } from '../utils/helpers';
+import { computeScore, getRating, countInds, fmtD, ini, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS, TYPE_COLORS } from '../constants';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface DashboardProps {
   state: AppState;
@@ -16,6 +16,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   // Filter data based on permissions
   const allowedTeachers = state.teachers.filter(t => {
     if (currentUser?.role === 'admin') return true;
+    if (currentUser?.role === 'teacher') return t.employeeId === currentUser.employeeId;
     if (!currentUser?.permissions) return true; // Default to all if no permissions set
     
     const p = currentUser.permissions;
@@ -28,11 +29,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
       if (!p.allowedSubjects.includes(t.subject)) match = false;
     }
-    
-    // If no specific filters selected but scope is set, it might be restrictive
-    if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && !p.viewScopes.includes('own')) {
-       // if they only have 'all' it's handled above. 
-       // if they have nothing, maybe default to true or false?
+    if (p.viewScopes.includes('own')) {
+       // Handled by allowedEvaluations logic mainly, but let's keep it consistent
     }
 
     return match;
@@ -42,6 +40,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   
   const allowedEvaluations = state.evaluations.filter(e => {
     if (currentUser?.role === 'admin') return true;
+    if (currentUser?.role === 'teacher') {
+      const teacher = state.teachers.find(t => t.employeeId === currentUser.employeeId);
+      return e.tid === teacher?.id;
+    }
     if (!currentUser?.permissions) return true;
     
     const p = currentUser.permissions;
@@ -59,10 +61,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   }, 0) / finals.length : 0;
 
   const metrics = [
-    { lbl: 'Faculty Members', val: allowedTeachers.length, ico: 'people', col: '#2563eb' },
-    { lbl: 'Completed Evals', val: finals.length, ico: 'assignment_turned_in', col: '#10b981' },
-    { lbl: 'System Average', val: finals.length ? avg.toFixed(2) : '—', ico: 'trending_up', col: '#7c3aed', sub: finals.length ? getRating(avg).label : 'No data yet' },
-    { lbl: 'Open Drafts', val: drafts.length, ico: 'edit_note', col: '#f59e0b' }
+    { lbl: currentUser?.role === 'teacher' ? 'My Profile' : 'Faculty Members', val: allowedTeachers.length, ico: 'people', col: '#2563eb' },
+    { lbl: currentUser?.role === 'teacher' ? 'My Evals' : 'Completed Evals', val: finals.length, ico: 'assignment_turned_in', col: '#10b981' },
+    { lbl: currentUser?.role === 'teacher' ? 'My Average' : 'System Average', val: finals.length ? avg.toFixed(2) : '—', ico: 'trending_up', col: '#7c3aed', sub: finals.length ? getRating(avg).label : 'No data yet' },
+    { lbl: currentUser?.role === 'teacher' ? 'Pending' : 'Open Drafts', val: drafts.length, ico: 'edit_note', col: '#f59e0b' }
   ];
 
   const recentEvals = [...finals].reverse().slice(0, 6);
@@ -78,6 +80,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
         type: TYPE_LABELS[e.type]
       };
     });
+
+  // Prepare HR data for chart
+  const hrChartData = allowedTeachers.map(t => {
+    const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
+    const s1 = getHRScore('absences', data.absences);
+    const s2 = getHRScore('earlyLeaves', data.earlyLeaves);
+    const s3 = getHRScore('lateArrivals', data.lateArrivals);
+    const avg = (s1 + s2 + s3) / 3;
+    return {
+      name: t.fullName.split(' ')[0],
+      score: parseFloat(avg.toFixed(2))
+    };
+  }).sort((a, b) => b.score - a.score).slice(0, 10);
 
   return (
     <div className="page">
@@ -255,7 +270,33 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
         </div>
       </div>
 
-      {finals.length > 0 && (
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+        <div className="card-xl" style={{ padding: '24px' }}>
+          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+              <span className="material-icons-outlined">event_available</span>
+            </div>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>HR Attendance Summary</h2>
+          </div>
+          <div style={{ height: '250px' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={hrChartData}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                />
+                <Bar dataKey="score" radius={[4, 4, 0, 0]} barSize={30}>
+                  {hrChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.score >= 3.5 ? '#10b981' : entry.score >= 2.5 ? '#6366f1' : '#f43f5e'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
         <div className="card-xl" style={{ padding: '24px' }}>
           <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '36px', height: '36px', background: 'rgba(168, 85, 247, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9333ea' }}>
@@ -263,7 +304,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
             </div>
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>Evaluation Type Breakdown</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
             {Object.entries(TYPE_LABELS).map(([t, l]) => {
               const cnt = finals.filter(e => e.type === t).length;
               const evs = finals.filter(e => e.type === t);
@@ -273,19 +314,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
               }, 0) / evs.length : 0;
               const r = evs.length ? getRating(tavg) : null;
               return (
-                <div key={t} style={{ border: `1px solid ${TYPE_COLORS[t]}30`, borderRadius: '16px', padding: '20px', background: `linear-gradient(145deg, ${TYPE_COLORS[t]}05, ${TYPE_COLORS[t]}10)`, position: 'relative', overflow: 'hidden' }}>
+                <div key={t} style={{ border: `1px solid ${TYPE_COLORS[t]}30`, borderRadius: '16px', padding: '16px', background: `linear-gradient(145deg, ${TYPE_COLORS[t]}05, ${TYPE_COLORS[t]}10)`, position: 'relative', overflow: 'hidden' }}>
                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', opacity: 0.1, color: TYPE_COLORS[t] }}>
-                    <span className="material-icons" style={{ fontSize: '80px' }}>assessment</span>
+                    <span className="material-icons" style={{ fontSize: '60px' }}>assessment</span>
                   </div>
-                  <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '42px', fontWeight: 900, color: cnt ? TYPE_COLORS[t] : 'var(--border-hover)', lineHeight: 1, marginBottom: '4px' }}>{cnt}</div>
-                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{l}</div>
-                  {r && <span className={`badge ${r.css}`} style={{ marginTop: '12px', fontSize: '10px' }}>Avg: {tavg.toFixed(2)} · {r.label}</span>}
+                  <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: cnt ? TYPE_COLORS[t] : 'var(--border-hover)', lineHeight: 1, marginBottom: '4px' }}>{cnt}</div>
+                  <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '.05em' }}>{l}</div>
+                  {r && <div style={{ marginTop: '8px', fontSize: '9px', fontWeight: 800, color: r.color }}>Avg: {tavg.toFixed(2)}</div>}
                 </div>
               );
             })}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };

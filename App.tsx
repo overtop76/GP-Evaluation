@@ -10,6 +10,7 @@ import Settings from './components/Settings';
 import UserManagement from './components/UserManagement';
 import AuditLog from './components/AuditLog';
 import HRAttendance from './components/HRAttendance';
+import EvaluationHistory from './components/EvaluationHistory';
 
 const AppContent: React.FC = () => {
   const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, toasts } = useApp();
@@ -51,6 +52,41 @@ const AppContent: React.FC = () => {
     );
   }
 
+  // Teacher users see their own dashboard and reports
+  if (state.currentUser.role === 'teacher') {
+    const teacher = state.teachers.find(t => t.employeeId === state.currentUser?.employeeId);
+    return (
+      <div id="app-wrap" className="on">
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          userRole={state.currentUser.role} 
+          userName={state.currentUser.name}
+          onLogout={logout}
+        />
+        <div id="main">
+          {activeTab === 'dashboard' ? (
+            <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={() => {}} />
+          ) : (
+            <Report 
+              teacherId={teacher?.id} 
+              type="gp" 
+              state={state} 
+              onBack={() => setActiveTab('dashboard')} 
+            />
+          )}
+        </div>
+        <div id="toasts">
+          {toasts.map(t => (
+            <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
+              {t.msg}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case 'dashboard':
@@ -66,6 +102,15 @@ const AppContent: React.FC = () => {
           onAddTeacher={addTeacher} 
           onDeleteTeacher={deleteTeacher} 
           onNavigate={handleNavigate} 
+        />;
+      case 'evaluations':
+        return <EvaluationHistory 
+          evaluations={state.evaluations}
+          teachers={state.teachers}
+          observers={state.observers}
+          onNavigate={handleNavigate}
+          onDelete={deleteEvaluation}
+          currentUser={state.currentUser!}
         />;
       case 'evaluate':
         const initialEval = evalParams.eid 

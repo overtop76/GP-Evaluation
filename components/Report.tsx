@@ -1,6 +1,6 @@
 import React from 'react';
 import { Teacher, Observer, Evaluation, AppState } from '../types';
-import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric } from '../utils/helpers';
+import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
@@ -335,26 +335,60 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
             {teacherHRData && (
               <div style={{ padding: '0 32px 32px' }}>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>HR Attendance & Punctuality Data</h2>
-                <div className="card" style={{ padding: '24px', display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Absences</div>
-                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Early Leaves</div>
-                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: '150px', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>Late Arrivals</div>
-                    <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
-                  </div>
-                  {teacherHRData.notes && (
-                    <div style={{ width: '100%', background: 'var(--bg)', padding: '16px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '8px' }}>HR Notes</div>
-                      <div style={{ fontSize: '14px', color: 'var(--slate-darker)' }}>{teacherHRData.notes}</div>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>HR Attendance & Punctuality Analysis</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                  <div className="card" style={{ padding: '24px' }}>
+                    <div style={{ height: '200px' }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={[
+                          { name: 'Absences', value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences) },
+                          { name: 'Early Leaves', value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves) },
+                          { name: 'Late Arrivals', value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals) }
+                        ]}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                          <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                          <Tooltip 
+                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                          />
+                          <Bar dataKey="value" fill="#6366f1" radius={[4, 4, 0, 0]} barSize={40} />
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
-                  )}
+                    <div className="frow" style={{ justifyContent: 'center', gap: '20px', marginTop: '16px' }}>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metric Count</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Absences</div>
+                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('absences', teacherHRData.absences)}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Early Leaves</div>
+                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves)}</div>
+                      </div>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Late Arrivals</div>
+                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('lateArrivals', teacherHRData.lateArrivals)}</div>
+                      </div>
+                    </div>
+                    
+                    {teacherHRData.notes && (
+                      <div style={{ marginTop: '20px', background: 'var(--bg)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>HR Observations</div>
+                        <div style={{ fontSize: '13px', color: 'var(--slate-darker)', fontStyle: 'italic' }}>"{teacherHRData.notes}"</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
