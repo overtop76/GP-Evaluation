@@ -21,6 +21,7 @@ export interface Observer {
   id: string;
   employeeId?: string;
   name: string;
+  email: string;
   username: string;
   role: UserRole;
   hash?: string;

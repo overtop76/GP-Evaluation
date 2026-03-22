@@ -15,6 +15,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Observer | null>(null);
   const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
   const [newEmployeeId, setNewEmployeeId] = useState('');
   const [newUsername, setNewUsername] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -31,6 +32,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     if (user) {
       setEditingUser(user);
       setNewName(user.name);
+      setNewEmail(user.email || '');
       setNewEmployeeId(user.employeeId || '');
       setNewUsername(user.username);
       setNewPassword('');
@@ -51,6 +53,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     } else {
       setEditingUser(null);
       setNewName('');
+      setNewEmail('');
       setNewEmployeeId('');
       setNewUsername('');
       setNewPassword('');
@@ -65,12 +68,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   };
 
   const handleSave = async () => {
-    if (!newName || !newEmployeeId || !newUsername || (!editingUser && !newPassword)) {
+    if (!newName || !newEmail || !newEmployeeId || !newUsername || (!editingUser && !newPassword)) {
       alert('Please complete all required fields.');
       return;
     }
     if (!editingUser && observers.find(o => o.username === newUsername.toLowerCase())) {
       alert('Username already exists.');
+      return;
+    }
+    
+    // Check if email is unique
+    if (observers.some(o => o.email === newEmail.toLowerCase() && o.id !== editingUser?.id)) {
+      alert('Email already exists.');
       return;
     }
     
@@ -92,6 +101,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       let updatedUser = {
         ...editingUser,
         name: newName,
+        email: newEmail.toLowerCase(),
         employeeId: newEmployeeId,
         username: newUsername.toLowerCase(),
         role: newRole,
@@ -113,6 +123,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         id: Date.now().toString(36),
         employeeId: newEmployeeId,
         name: newName,
+        email: newEmail.toLowerCase(),
         username: newUsername.toLowerCase(),
         role: newRole,
         hash,
@@ -154,17 +165,28 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
               <tr key={o.id}>
                 <td style={{ paddingLeft: '24px' }}>
                   <div className="frow" style={{ gap: '12px' }}>
-                    <div className="av" style={{ width: '36px', height: '36px', background: o.role === 'admin' ? '#7c3aed' : '#2563eb', borderRadius: '10px', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{ini(o.name)}</div>
+                    <div className="av" style={{ width: '36px', height: '36px', background: o.role === 'admin' ? '#7c3aed' : o.role === 'hr' ? '#0ea5e9' : '#2563eb', borderRadius: '10px', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{ini(o.name)}</div>
                     <div>
                       <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{o.name}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--slate)', fontWeight: 600 }}>{o.role === 'admin' ? 'Administrator' : 'Observer'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--slate)', fontWeight: 600 }}>
+                        {o.role === 'admin' ? 'Administrator' : o.role === 'hr' ? 'HR User' : 'Observer'}
+                      </div>
                     </div>
                   </div>
                 </td>
                 <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{o.employeeId || '—'}</span></td>
-                <td><span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '13px', color: 'var(--slate-dark)', background: 'var(--bg)', padding: '4px 8px', borderRadius: '6px' }}>@{o.username}</span></td>
                 <td>
-                  <span className="badge" style={{ background: o.role === 'admin' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(37, 99, 235, 0.1)', color: o.role === 'admin' ? '#7c3aed' : '#2563eb', borderColor: o.role === 'admin' ? '#e9d5ff' : '#bfdbfe' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: 'var(--slate-dark)', background: 'var(--bg)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>@{o.username}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--slate)', marginTop: '2px' }}>{o.email}</span>
+                  </div>
+                </td>
+                <td>
+                  <span className="badge" style={{ 
+                    background: o.role === 'admin' ? 'rgba(168, 85, 247, 0.1)' : o.role === 'hr' ? 'rgba(14, 165, 233, 0.1)' : 'rgba(37, 99, 235, 0.1)', 
+                    color: o.role === 'admin' ? '#7c3aed' : o.role === 'hr' ? '#0284c7' : '#2563eb', 
+                    borderColor: o.role === 'admin' ? '#e9d5ff' : o.role === 'hr' ? '#bae6fd' : '#bfdbfe' 
+                  }}>
                     {o.role}
                   </span>
                 </td>
@@ -212,6 +234,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 <input className="finput" placeholder="Unique ID" value={newEmployeeId} onChange={e => setNewEmployeeId(e.target.value)} />
               </div>
             </div>
+            <div className="field">
+              <label className="flabel">School Email</label>
+              <div style={{ position: 'relative' }}>
+                <span className="material-icons-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '18px' }}>email</span>
+                <input className="finput" placeholder="name@globalparadigmschools.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+              </div>
+            </div>
             <div className="g2">
               <div className="field">
                 <label className="flabel">Username</label>
@@ -229,7 +258,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   <input type="radio" name="of-role" value="observer" checked={newRole === 'observer'} onChange={() => setNewRole('observer')} style={{ accentColor: 'var(--blue)', width: '16px', height: '16px' }} />
                   <div>
                     <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>Observer</div>
-                    <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Standard access</div>
+                    <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Scoped access</div>
                   </div>
                 </label>
                 <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', background: 'var(--bg)', border: `2px solid ${newRole === 'admin' ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
@@ -239,8 +268,33 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                     <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Full system control</div>
                   </div>
                 </label>
+                <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', background: 'var(--bg)', border: `2px solid ${newRole === 'hr' ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <input type="radio" name="of-role" value="hr" checked={newRole === 'hr'} onChange={() => setNewRole('hr')} style={{ accentColor: 'var(--blue)', width: '16px', height: '16px' }} />
+                  <div>
+                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>HR User</div>
+                    <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Attendance only</div>
+                  </div>
+                </label>
               </div>
             </div>
+            
+            {newRole === 'admin' && (
+              <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '12px', border: '1px solid rgba(37, 99, 235, 0.1)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>Administrator Access</h3>
+                <p style={{ fontSize: '12px', color: 'var(--slate)', lineHeight: 1.5 }}>
+                  Administrators automatically receive full access to observations, reports, printing, rubric settings, user management, audit logs, and HR attendance controls.
+                </p>
+              </div>
+            )}
+
+            {newRole === 'hr' && (
+              <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(14, 165, 233, 0.05)', borderRadius: '12px', border: '1px solid rgba(14, 165, 233, 0.1)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>HR Access</h3>
+                <p style={{ fontSize: '12px', color: 'var(--slate)', lineHeight: 1.5 }}>
+                  HR users can only open the HR Attendance page and enter attendance, late arrival, and early leave data. They cannot view evaluations, reports, dashboards, or user administration.
+                </p>
+              </div>
+            )}
             
             {newRole === 'observer' && (
               <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>

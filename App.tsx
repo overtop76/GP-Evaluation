@@ -24,7 +24,7 @@ const AppContent: React.FC = () => {
   };
 
   if (!state.currentUser) {
-    return <Login observers={state.observers} onLogin={login} />;
+    return <Login observers={state.observers} onLogin={login} onRegister={addUser} />;
   }
 
   // HR users see only the HR Attendance page

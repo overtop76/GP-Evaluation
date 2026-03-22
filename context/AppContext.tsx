@@ -11,9 +11,9 @@ const INIT_STATE: AppState = {
     { id: 't4', employeeId: 'GP-1004', fullName: 'Robert Terwilliger', subject: 'Social Studies', role: 'Teacher', division: 'High' },
   ],
   observers: [
-    { id: 'o1', employeeId: 'ADM-001', name: 'System Administrator', username: 'admin', role: 'admin', hash: '', salt: '' },
-    { id: 'o2', employeeId: 'OBS-001', name: 'Principal Skinner', username: 'observer', role: 'observer', hash: '', salt: '' },
-    { id: 'o3', employeeId: 'HR-001', name: 'HR Department', username: 'hr@globalparadigmschools.com', role: 'hr', hash: '', salt: '' },
+    { id: 'o1', employeeId: 'ADM-001', name: 'System Administrator', email: 'admin@globalparadigmschools.com', username: 'admin', role: 'admin', hash: '', salt: '' },
+    { id: 'o2', employeeId: 'OBS-001', name: 'Principal Skinner', email: 'observer@globalparadigmschools.com', username: 'observer', role: 'observer', hash: '', salt: '' },
+    { id: 'o3', employeeId: 'HR-001', name: 'HR Department', email: 'hr@globalparadigmschools.com', username: 'hr@globalparadigmschools.com', role: 'hr', hash: '', salt: '' },
   ],
   evaluations: [],
   logs: [],
