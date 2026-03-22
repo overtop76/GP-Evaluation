@@ -2,7 +2,7 @@ import React from 'react';
 import { Teacher, Observer, Evaluation, AppState } from '../types';
 import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
 
 interface ReportProps {
   teacherId: string | null;
@@ -97,25 +97,29 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const rubric = getRubric(currentType, state.customWeights);
   
   const isCollective = !observerFilter;
+  const observer = state.observers.find(o => o.id === observerFilter);
+  const reportTitle = isCollective ? "Collective Performance Evaluation Report" : `Observer Evaluation Report: ${observer?.name || 'Unknown'}`;
+
   const sm: Record<string, number> = {};
   const nm: Record<string, string> = {};
+  const agreementCount: Record<string, { strength: number, improvement: number, total: number }> = {};
   
-  if (isCollective && finals.length > 0) {
+  if (finals.length > 0) {
     const counts: Record<string, number> = {};
     finals.forEach(f => {
       f.scores.forEach(s => {
         sm[s.id] = (sm[s.id] || 0) + s.score;
         counts[s.id] = (counts[s.id] || 0) + 1;
         if (s.notes) nm[s.id] = nm[s.id] ? `${nm[s.id]} | ${s.notes}` : s.notes;
+        
+        if (!agreementCount[s.id]) agreementCount[s.id] = { strength: 0, improvement: 0, total: 0 };
+        agreementCount[s.id].total++;
+        if (s.score >= 3) agreementCount[s.id].strength++;
+        if (s.score <= 2) agreementCount[s.id].improvement++;
       });
     });
     Object.keys(sm).forEach(k => {
       sm[k] = sm[k] / counts[k];
-    });
-  } else if (latest) {
-    latest.scores.forEach(s => {
-      sm[s.id] = s.score;
-      if (s.notes) nm[s.id] = s.notes;
     });
   }
   
@@ -124,8 +128,28 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   
   if (Object.keys(sm).length > 0) {
     rubric.forEach(d => d.subdomains.forEach(s => s.indicators.forEach(i => {
-      if (sm[i.id] >= 3) strengths.push({ id: i.id, text: i.text, score: sm[i.id] });
-      else if (sm[i.id] && sm[i.id] <= 2) imps.push({ id: i.id, text: i.text, score: sm[i.id] });
+      const score = sm[i.id];
+      const agreement = agreementCount[i.id];
+      
+      if (isCollective) {
+        // Collective: Common strengths (at least 60% agreement among observers who rated it)
+        const observerCount = new Set(finals.map(f => f.oid)).size;
+        if (observerCount > 1) {
+           if (agreement && agreement.strength / agreement.total >= 0.6) {
+             strengths.push({ id: i.id, text: i.text, score });
+           }
+           if (agreement && agreement.improvement / agreement.total >= 0.6) {
+             imps.push({ id: i.id, text: i.text, score });
+           }
+        } else {
+           if (score >= 3) strengths.push({ id: i.id, text: i.text, score });
+           else if (score && score <= 2) imps.push({ id: i.id, text: i.text, score });
+        }
+      } else {
+        // Individual: All strengths/improvements
+        if (score >= 3) strengths.push({ id: i.id, text: i.text, score });
+        else if (score && score <= 2) imps.push({ id: i.id, text: i.text, score });
+      }
     })));
   }
 
@@ -204,7 +228,10 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             <div>
               <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '36px', fontWeight: 900, color: '#fff', letterSpacing: '.02em', lineHeight: 1 }}>{teacher.fullName}</div>
               <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>
-                Employee ID: {teacher.employeeId || 'N/A'} · Performance Evaluation Report · Global Paradigm International School
+                {reportTitle} · Global Paradigm International School
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,.4)', marginTop: '4px' }}>
+                Employee ID: {teacher.employeeId || 'N/A'} · {teacher.role} · {teacher.subject} · {teacher.division}
               </div>
             </div>
           </div>
@@ -223,11 +250,47 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <div className="rmc"><div className="rmc-l">Latest Date</div><div className="rmc-v">{latest ? fmtD(latest.date) : '—'}</div></div>
               <div className="rmc"><div className="rmc-l">Total Evaluations</div><div className="rmc-v">{finals.length} completed</div></div>
               <div className="rmc"><div className="rmc-l">Period Average</div><div className="rmc-v" style={{ color: r.color }}>{avgScore.toFixed(2)}</div></div>
+              <div className="rmc"><div className="rmc-l">HR Weight</div><div className="rmc-v">{state.hrWeight}%</div></div>
             </div>
 
-            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }}>
+            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>Performance by Domain (Latest)</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>Domain Competency Profile</h2>
+                <div style={{ height: '300px' }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+                      <PolarGrid stroke="var(--border)" />
+                      <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--slate)' }} />
+                      <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fontSize: 10 }} />
+                      <Radar name="Score" dataKey="avg" stroke={r.color} fill={r.color} fillOpacity={0.5} />
+                      <Tooltip />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>Executive Summary</h3>
+                <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--slate-darker)' }}>
+                  This report summarizes the performance of <strong>{teacher.fullName}</strong> for the <strong>{TYPE_LABELS[currentType]}</strong> framework. 
+                  Based on <strong>{finals.length}</strong> evaluations, the overall score is <strong>{latestScore.toFixed(2)}</strong>, placing the teacher in the <strong>{r.label}</strong> category.
+                  {isCollective ? ' This collective view represents a consensus across multiple observers.' : ' This report reflects the specific observations of the selected evaluator.'}
+                </p>
+                <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+                   <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Avg Score</div>
+                      <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--navy)' }}>{avgScore.toFixed(2)}</div>
+                   </div>
+                   <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Rating</div>
+                      <div style={{ fontSize: '16px', fontWeight: 900, color: r.color }}>{r.label}</div>
+                   </div>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }} className="page-break">
+              <div>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>Performance by Domain (Detailed)</h2>
                 <div style={{ height: Math.max(240, ds.length * 50 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart layout="vertical" data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -248,7 +311,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 </div>
               </div>
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Latest Score</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Overall Rating</h2>
                 <div style={{ background: r.hex, border: `1px solid ${r.color}30`, borderRadius: '20px', padding: '32px', textAlign: 'center', borderTop: `6px solid ${r.color}`, boxShadow: 'var(--sh)' }}>
                   <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '80px', fontWeight: 900, color: r.color, lineHeight: 1 }}>{latestScore.toFixed(2)}</div>
                   <span className={`badge ${r.css}`} style={{ fontSize: '13px', padding: '6px 18px', marginTop: '12px' }}>{r.label}</span>
@@ -302,7 +365,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             )}
 
-            <div style={{ padding: '0 32px 32px' }}>
+            <div style={{ padding: '0 32px 32px' }} className="page-break">
               <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Domain Breakdown</h2>
               <div className="card" style={{ overflow: 'hidden' }}>
                 <table className="gtable">
@@ -334,7 +397,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             </div>
 
             {teacherHRData && (
-              <div style={{ padding: '0 32px 32px' }}>
+              <div style={{ padding: '0 32px 32px' }} className="page-break">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>HR Attendance & Punctuality Analysis</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="card" style={{ padding: '24px' }}>
@@ -393,14 +456,14 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             )}
 
-            <div style={{ padding: '0 32px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <div style={{ padding: '0 32px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }} className="page-break">
               <div>
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#15803d', marginBottom: '16px' }}>
                   {isCollective ? 'Common Strengths' : 'Identified Strengths'} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span>
                 </h2>
                 {strengths.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {strengths.slice(0, 8).map(s => (
+                    {strengths.map(s => (
                       <div key={s.id} style={{ background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '14px 18px', breakInside: 'avoid' }}>
                         <div className="frow" style={{ gap: '10px', marginBottom: '6px' }}>
                           <span className="ind-id">{s.id}</span>
@@ -418,7 +481,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 </h2>
                 {imps.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {imps.slice(0, 8).map(s => (
+                    {imps.map(s => (
                       <div key={s.id} style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #fecaca', borderRadius: '12px', padding: '14px 18px', breakInside: 'avoid' }}>
                         <div className="frow" style={{ gap: '10px', marginBottom: '6px' }}>
                           <span className="ind-id" style={{ background: 'var(--red)' }}>{s.id}</span>

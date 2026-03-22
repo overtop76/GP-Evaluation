@@ -69,6 +69,70 @@
   background: var(--slate-darker);
 }
 
+@media print {
+  body {
+    background: white !important;
+    font-size: 12pt;
+  }
+  #app-wrap {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  .sidebar, .no-print, header, nav {
+    display: none !important;
+  }
+  #main {
+    display: block !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  .page {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: none !important;
+    animation: none !important;
+  }
+  .card, .card-xl {
+    box-shadow: none !important;
+    border: 1px solid #eee !important;
+    break-inside: avoid;
+    margin-bottom: 20px !important;
+  }
+  .rep-hdr {
+    background: #0f172a !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    color: white !important;
+    padding: 30px !important;
+    border-radius: 0 !important;
+  }
+  .rep-hdr * {
+    color: white !important;
+  }
+  .badge {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    border: 1px solid #ddd !important;
+  }
+  .gtable th {
+    background: #f8fafc !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .page-break {
+    page-break-before: always;
+    margin-top: 40px;
+  }
+  h2, h3 {
+    break-after: avoid;
+  }
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 300px !important;
+  }
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
