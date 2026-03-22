@@ -18,14 +18,14 @@ const TB: Record<string, string> = {
 const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
   const [filter, setFilter] = useState('');
 
-  const filteredLogs = logs
+  const filteredLogs = React.useMemo(() => logs
     .filter(l => 
       l.action.toLowerCase().includes(filter.toLowerCase()) || 
       l.details.toLowerCase().includes(filter.toLowerCase()) ||
       l.uname.toLowerCase().includes(filter.toLowerCase())
     )
     .reverse()
-    .slice(0, 200);
+    .slice(0, 200), [logs, filter]);
 
   return (
     <div className="page">

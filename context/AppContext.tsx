@@ -234,27 +234,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('System reset.', 'success');
   };
 
+  const contextValue = React.useMemo(() => ({
+    state,
+    login,
+    logout,
+    addTeacher,
+    deleteTeacher,
+    saveEvaluation,
+    deleteEvaluation,
+    addUser,
+    updateUser,
+    deleteUser,
+    updateWeights,
+    resetWeights,
+    updateHRData,
+    updateHRWeight,
+    updateHRRubric,
+    resetSystem,
+    toasts,
+    showToast
+  }), [state, toasts]);
+
   return (
-    <AppContext.Provider value={{
-      state,
-      login,
-      logout,
-      addTeacher,
-      deleteTeacher,
-      saveEvaluation,
-      deleteEvaluation,
-      addUser,
-      updateUser,
-      deleteUser,
-      updateWeights,
-      resetWeights,
-      updateHRData,
-      updateHRWeight,
-      updateHRRubric,
-      resetSystem,
-      toasts,
-      showToast
-    }}>
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

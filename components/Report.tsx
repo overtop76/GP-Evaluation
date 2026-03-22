@@ -23,7 +23,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const teacher = state.teachers.find(t => t.id === teacherId);
   if (!teacher) return <div className="page"><div className="empty"><span className="material-icons mi">error_outline</span><p>Teacher not found.</p></div></div>;
 
-  const allFinals = state.evaluations.filter(e => {
+  const allFinals = React.useMemo(() => state.evaluations.filter(e => {
     if (e.tid !== teacherId || e.type !== currentType || e.draft) return false;
     
     // Check permissions
@@ -35,7 +35,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     if (p.viewScopes.includes('own') && e.oid !== state.currentUser.id) return false;
     
     return true;
-  });
+  }), [state.evaluations, teacherId, currentType, state.currentUser]);
   
   if (!allFinals.length) {
     return (
@@ -82,12 +82,12 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     );
   }
 
-  const finals = allFinals.filter(e => {
+  const finals = React.useMemo(() => allFinals.filter(e => {
     if (startDate && e.date < startDate) return false;
     if (endDate && e.date > endDate) return false;
     if (observerFilter && e.oid !== observerFilter) return false;
     return true;
-  });
+  }), [allFinals, startDate, endDate, observerFilter]);
 
   const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
   const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };

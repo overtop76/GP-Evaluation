@@ -35,7 +35,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
     }
   }, [initialData]);
 
-  const allowedTeachers = teachers.filter(t => {
+  const allowedTeachers = React.useMemo(() => teachers.filter(t => {
     if (currentUser?.role === 'admin') return true;
     if (!currentUser?.permissions) return true;
     
@@ -50,7 +50,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
       if (!p.allowedSubjects.includes(t.subject)) match = false;
     }
     return match;
-  });
+  }), [teachers, currentUser]);
 
   const rubric = getRubric(type, customWeights);
   const total = countInds(type);

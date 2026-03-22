@@ -17,11 +17,21 @@ const AppContent: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evalParams, setEvalParams] = useState<any>({});
 
-  const handleNavigate = (page: string, params?: any) => {
+  const handleNavigate = React.useCallback((page: string, params?: any) => {
     setActiveTab(page);
     if (params) setEvalParams(params);
     else setEvalParams({});
-  };
+  }, []);
+
+  const renderToasts = () => (
+    <div id="toasts">
+      {toasts.map(t => (
+        <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
+          {t.msg}
+        </div>
+      ))}
+    </div>
+  );
 
   if (!state.currentUser) {
     return <Login observers={state.observers} onLogin={login} onRegister={addUser} />;
@@ -41,13 +51,7 @@ const AppContent: React.FC = () => {
         <div id="main">
           <HRAttendance />
         </div>
-        <div id="toasts">
-          {toasts.map(t => (
-            <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
-              {t.msg}
-            </div>
-          ))}
-        </div>
+        {renderToasts()}
       </div>
     );
   }
@@ -76,13 +80,7 @@ const AppContent: React.FC = () => {
             />
           )}
         </div>
-        <div id="toasts">
-          {toasts.map(t => (
-            <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
-              {t.msg}
-            </div>
-          ))}
-        </div>
+        {renderToasts()}
       </div>
     );
   }
@@ -171,13 +169,7 @@ const AppContent: React.FC = () => {
       <div id="main">
         {renderContent()}
       </div>
-      <div id="toasts">
-        {toasts.map(t => (
-          <div key={t.id} className="toast" style={{ borderLeftColor: t.type === 'success' ? '#10b981' : t.type === 'error' ? '#ef4444' : '#2563eb' }}>
-            {t.msg}
-          </div>
-        ))}
-      </div>
+      {renderToasts()}
     </div>
   );
 };

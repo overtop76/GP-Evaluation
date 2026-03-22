@@ -14,7 +14,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   const currentUser = state.currentUser;
   
   // Filter data based on permissions
-  const allowedTeachers = state.teachers.filter(t => {
+  const allowedTeachers = React.useMemo(() => state.teachers.filter(t => {
     if (currentUser?.role === 'admin') return true;
     if (currentUser?.role === 'teacher') return t.employeeId === currentUser.employeeId;
     if (!currentUser?.permissions) return true; // Default to all if no permissions set
@@ -34,11 +34,11 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     }
 
     return match;
-  });
+  }), [state.teachers, currentUser]);
   
-  const allowedTeacherIds = new Set(allowedTeachers.map(t => t.id));
+  const allowedTeacherIds = React.useMemo(() => new Set(allowedTeachers.map(t => t.id)), [allowedTeachers]);
   
-  const allowedEvaluations = state.evaluations.filter(e => {
+  const allowedEvaluations = React.useMemo(() => state.evaluations.filter(e => {
     if (currentUser?.role === 'admin') return true;
     if (currentUser?.role === 'teacher') {
       const teacher = state.teachers.find(t => t.employeeId === currentUser.employeeId);
@@ -51,26 +51,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     if (p.viewScopes.includes('own') && e.oid !== currentUser.id) return false;
     if (!allowedTeacherIds.has(e.tid)) return false;
     return true;
-  });
+  }), [state.evaluations, currentUser, state.teachers, allowedTeacherIds]);
 
-  const finals = allowedEvaluations.filter(e => !e.draft);
-  const drafts = allowedEvaluations.filter(e => e.draft);
-  const avg = finals.length ? finals.reduce((a, e) => {
+  const finals = React.useMemo(() => allowedEvaluations.filter(e => !e.draft), [allowedEvaluations]);
+  const drafts = React.useMemo(() => allowedEvaluations.filter(e => e.draft), [allowedEvaluations]);
+  const avg = React.useMemo(() => finals.length ? finals.reduce((a, e) => {
     const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
     return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric);
-  }, 0) / finals.length : 0;
+  }, 0) / finals.length : 0, [finals, state.hrData, state.customWeights, state.hrWeight, state.hrRubric]);
 
-  const metrics = [
+  const metrics = React.useMemo(() => [
     { lbl: currentUser?.role === 'teacher' ? 'My Profile' : 'Faculty Members', val: allowedTeachers.length, ico: 'people', col: '#2563eb' },
     { lbl: currentUser?.role === 'teacher' ? 'My Evals' : 'Completed Evals', val: finals.length, ico: 'assignment_turned_in', col: '#10b981' },
     { lbl: currentUser?.role === 'teacher' ? 'My Average' : 'System Average', val: finals.length ? avg.toFixed(2) : '—', ico: 'trending_up', col: '#7c3aed', sub: finals.length ? getRating(avg).label : 'No data yet' },
     { lbl: currentUser?.role === 'teacher' ? 'Pending' : 'Open Drafts', val: drafts.length, ico: 'edit_note', col: '#f59e0b' }
-  ];
+  ], [currentUser?.role, allowedTeachers.length, finals.length, avg, drafts.length]);
 
-  const recentEvals = [...finals].reverse().slice(0, 6);
+  const recentEvals = React.useMemo(() => [...finals].reverse().slice(0, 6), [finals]);
 
   // Prepare data for trend chart
-  const trendData = [...finals]
+  const trendData = React.useMemo(() => [...finals]
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .map(e => {
       const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
@@ -79,12 +79,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
         score: computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric),
         type: TYPE_LABELS[e.type]
       };
-    });
+    }), [finals, state.hrData, state.customWeights, state.hrWeight, state.hrRubric]);
 
   const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
 
   // Prepare HR data for chart
-  const hrChartData = allowedTeachers.map(t => {
+  const hrChartData = React.useMemo(() => allowedTeachers.map(t => {
     const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
     const s1 = getHRScore('absences', data.absences, hrRubric.absences);
     const s2 = getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
@@ -94,7 +94,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
       name: t.fullName.split(' ')[0],
       score: parseFloat(avg.toFixed(2))
     };
-  }).sort((a, b) => b.score - a.score).slice(0, 10);
+  }).sort((a, b) => b.score - a.score).slice(0, 10), [allowedTeachers, state.hrData, hrRubric]);
 
   return (
     <div className="page">

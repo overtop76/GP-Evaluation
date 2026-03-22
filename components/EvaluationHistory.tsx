@@ -17,7 +17,7 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const filtered = evaluations.filter(e => {
+  const filtered = React.useMemo(() => evaluations.filter(e => {
     const teacher = teachers.find(t => t.id === e.tid);
     const observer = observers.find(o => o.id === e.oid);
     
@@ -32,7 +32,7 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
     const isAllowed = currentUser.role === 'admin' || e.oid === currentUser.id;
 
     return matchesSearch && matchesType && matchesStatus && isAllowed;
-  });
+  }), [evaluations, teachers, observers, search, typeFilter, statusFilter, currentUser]);
 
   return (
     <div className="page">

@@ -37,10 +37,10 @@ const HRAttendance: React.FC = () => {
     }
   };
 
-  const filteredTeachers = state.teachers.filter(t => 
+  const filteredTeachers = useMemo(() => state.teachers.filter(t => 
     t.fullName.toLowerCase().includes(search.toLowerCase()) ||
     t.employeeId?.toLowerCase().includes(search.toLowerCase())
-  );
+  ), [state.teachers, search]);
 
   const handleDataChange = (teacherId: string, field: keyof HRData, value: string) => {
     const existing = state.hrData.find(d => d.teacherId === teacherId) || {

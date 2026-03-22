@@ -28,7 +28,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
   const [newDivs, setNewDivs] = useState<string[]>([]);
 
   // Filter based on permissions
-  const allowedTeachers = teachers.filter(t => {
+  const allowedTeachers = React.useMemo(() => teachers.filter(t => {
     if (currentUser?.role === 'admin') return true;
     if (!currentUser?.permissions) return true;
     
@@ -43,9 +43,9 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
       if (!p.allowedSubjects.includes(t.subject)) match = false;
     }
     return match;
-  });
+  }), [teachers, currentUser]);
 
-  const filteredTeachers = allowedTeachers.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase()));
+  const filteredTeachers = React.useMemo(() => allowedTeachers.filter(t => t.fullName.toLowerCase().includes(search.toLowerCase())), [allowedTeachers, search]);
 
   const handleAdd = () => {
     if (!newName || !newEmployeeId || !newSubject || !newRole || !newDivs.length) {
