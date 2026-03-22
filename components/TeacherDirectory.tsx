@@ -9,13 +9,14 @@ interface TeacherDirectoryProps {
   customWeights: Record<string, number[]>;
   hrData?: HRData[];
   hrWeight?: number;
+  hrRubric?: any;
   currentUser: Observer;
   onAddTeacher: (t: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
   onNavigate: (page: string, params?: any) => void;
 }
 
-const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, hrData, hrWeight, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
+const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   
@@ -124,7 +125,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                 const evals = evaluations.filter(e => e.tid === t.id && !e.draft);
                 const avg = evals.length ? evals.reduce((a, e) => {
                   const teacherHRData = hrData?.find(h => h.teacherId === e.tid);
-                  return a + computeScore(e, customWeights, teacherHRData, hrWeight);
+                  return a + computeScore(e, customWeights, teacherHRData, hrWeight, hrRubric);
                 }, 0) / evals.length : null;
                 const r = avg != null ? getRating(avg) : null;
                 return (

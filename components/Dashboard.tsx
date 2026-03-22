@@ -57,7 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   const drafts = allowedEvaluations.filter(e => e.draft);
   const avg = finals.length ? finals.reduce((a, e) => {
     const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
-    return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight);
+    return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric);
   }, 0) / finals.length : 0;
 
   const metrics = [
@@ -76,17 +76,19 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
       const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
       return {
         date: fmtD(e.date),
-        score: computeScore(e, state.customWeights, teacherHRData, state.hrWeight),
+        score: computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric),
         type: TYPE_LABELS[e.type]
       };
     });
 
+  const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
+
   // Prepare HR data for chart
   const hrChartData = allowedTeachers.map(t => {
     const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
-    const s1 = getHRScore('absences', data.absences);
-    const s2 = getHRScore('earlyLeaves', data.earlyLeaves);
-    const s3 = getHRScore('lateArrivals', data.lateArrivals);
+    const s1 = getHRScore('absences', data.absences, hrRubric.absences);
+    const s2 = getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
+    const s3 = getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
     const avg = (s1 + s2 + s3) / 3;
     return {
       name: t.fullName.split(' ')[0],
@@ -178,7 +180,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
                 {recentEvals.length > 0 ? recentEvals.map(ev => {
                   const t = state.teachers.find(x => x.id === ev.tid);
                   const teacherHRData = state.hrData?.find(h => h.teacherId === ev.tid);
-                  const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight);
+                  const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric);
                   const r = getRating(s);
                   return (
                     <tr key={ev.id}>
@@ -310,7 +312,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
               const evs = finals.filter(e => e.type === t);
               const tavg = evs.length ? evs.reduce((a, e) => {
                 const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
-                return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight);
+                return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric);
               }, 0) / evs.length : 0;
               const r = evs.length ? getRating(tavg) : null;
               return (

@@ -90,13 +90,14 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   });
 
   const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
+  const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
   
   const latest = finals.length ? finals[finals.length - 1] : null;
   
   // Calculate domain scores for all evaluations in scope
   const allDomainScores = React.useMemo(() => 
-    finals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight)),
-    [finals, state.customWeights, teacherHRData, state.hrWeight]
+    finals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubric)),
+    [finals, state.customWeights, teacherHRData, state.hrWeight, hrRubric]
   );
 
   // Average domain scores across all observers for the breakdown table
@@ -109,7 +110,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     });
   }, [allDomainScores]);
 
-  const latestScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight), 0) / finals.length : 0;
+  const latestScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric), 0) / finals.length : 0;
   const avgScore = latestScore; // In this view, they are the same as we average everything in scope
   const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9' };
   const rubric = getRubric(currentType, state.customWeights);
@@ -132,7 +133,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
       observersInReport.forEach(obs => {
         const obsEvals = finals.filter(f => f.oid === obs.id);
         if (obsEvals.length) {
-          const obsDs = obsEvals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight));
+          const obsDs = obsEvals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubric));
           const avg = obsDs.reduce((acc, curr) => acc + curr[dIdx].avg, 0) / obsDs.length;
           entry[obs.name] = parseFloat(avg.toFixed(2));
         }
@@ -460,9 +461,9 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                     <div style={{ height: '200px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={[
-                          { name: 'Absences', value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences) },
-                          { name: 'Early Leaves', value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves) },
-                          { name: 'Late Arrivals', value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals) }
+                          { name: 'Absences', value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },
+                          { name: 'Early Leaves', value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) },
+                          { name: 'Late Arrivals', value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) }
                         ]}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
@@ -487,17 +488,17 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Absences</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('absences', teacherHRData.absences)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubric.absences) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('absences', teacherHRData.absences, hrRubric.absences)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Early Leaves</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Late Arrivals</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('lateArrivals', teacherHRData.lateArrivals)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals)}</div>
                       </div>
                     </div>
                     
@@ -573,7 +574,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   <tbody>
                     {[...finals].reverse().map(ev => {
                       const teacherHRData = state.hrData?.find(h => h.teacherId === ev.tid);
-                      const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight);
+                      const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight, hrRubric);
                       const rr = getRating(s);
                       const obs = state.observers.find(o => o.id === ev.oid);
                       return (

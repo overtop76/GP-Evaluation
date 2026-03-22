@@ -65,6 +65,12 @@ export interface HRData {
   lastUpdated: string;
 }
 
+export interface HRRubricThresholds {
+  absences: number[];
+  earlyLeaves: number[];
+  lateArrivals: number[];
+}
+
 export interface AppState {
   currentUser: Observer | null;
   teachers: Teacher[];
@@ -74,6 +80,7 @@ export interface AppState {
   customWeights: Record<string, number[]>;
   hrData: HRData[];
   hrWeight: number;
+  hrRubric: HRRubricThresholds;
 }
 
 // Rubric Types

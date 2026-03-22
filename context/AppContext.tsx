@@ -20,6 +20,11 @@ const INIT_STATE: AppState = {
   customWeights: {},
   hrData: [],
   hrWeight: 5,
+  hrRubric: {
+    absences: [2, 5, 9],
+    earlyLeaves: [2, 4, 7],
+    lateArrivals: [2, 4, 7],
+  },
 };
 
 interface AppContextType {
@@ -37,6 +42,7 @@ interface AppContextType {
   resetWeights: (type: string) => void;
   updateHRData: (data: HRData) => void;
   updateHRWeight: (weight: number) => void;
+  updateHRRubric: (rubric: AppState['hrRubric']) => void;
   resetSystem: () => void;
   toasts: { id: string; msg: string; type: string }[];
   showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
@@ -50,7 +56,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const saved = localStorage.getItem('gp_eval_v4');
       if (saved) {
         const parsed = JSON.parse(saved);
-        return { ...parsed, currentUser: null }; 
+        return { ...INIT_STATE, ...parsed, currentUser: null }; 
       }
     } catch (e) {
       console.error(e);
@@ -216,6 +222,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('HR weight updated.', 'success');
   };
 
+  const updateHRRubric = (rubric: AppState['hrRubric']) => {
+    setState(prev => ({ ...prev, hrRubric: rubric }));
+    addLog('UPDATE_HR_RUBRIC', 'Updated HR scoring thresholds', 'UPDATE');
+    showToast('HR rubric updated.', 'success');
+  };
+
   const resetSystem = () => {
     setState({ ...INIT_STATE, currentUser: state.currentUser });
     addLog('RESET_SYSTEM', 'System reset to demo data', 'DELETE');
@@ -238,6 +250,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       resetWeights,
       updateHRData,
       updateHRWeight,
+      updateHRRubric,
       resetSystem,
       toasts,
       showToast

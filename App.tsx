@@ -13,7 +13,7 @@ import HRAttendance from './components/HRAttendance';
 import EvaluationHistory from './components/EvaluationHistory';
 
 const AppContent: React.FC = () => {
-  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, toasts } = useApp();
+  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, toasts } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evalParams, setEvalParams] = useState<any>({});
 
@@ -98,6 +98,7 @@ const AppContent: React.FC = () => {
           customWeights={state.customWeights}
           hrData={state.hrData}
           hrWeight={state.hrWeight}
+          hrRubric={state.hrRubric}
           currentUser={state.currentUser!}
           onAddTeacher={addTeacher} 
           onDeleteTeacher={deleteTeacher} 
@@ -150,6 +151,8 @@ const AppContent: React.FC = () => {
           onUpdateWeights={updateWeights} 
           onResetWeights={resetWeights} 
           onResetSystem={resetSystem} 
+          onUpdateHRWeight={updateHRWeight}
+          onUpdateHRRubric={updateHRRubric}
         />;
       default:
         return <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={deleteEvaluation} />;
