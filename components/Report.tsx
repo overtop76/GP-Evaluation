@@ -2,7 +2,9 @@ import React from 'react';
 import { Teacher, Observer, Evaluation, AppState } from '../types';
 import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+
+const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
 
 interface ReportProps {
   teacherId: string | null;
@@ -90,15 +92,54 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
   
   const latest = finals.length ? finals[finals.length - 1] : null;
-  const latestScore = latest ? computeScore(latest, state.customWeights, teacherHRData, state.hrWeight) : 0;
-  const avgScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight), 0) / finals.length : 0;
+  
+  // Calculate domain scores for all evaluations in scope
+  const allDomainScores = React.useMemo(() => 
+    finals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight)),
+    [finals, state.customWeights, teacherHRData, state.hrWeight]
+  );
+
+  // Average domain scores across all observers for the breakdown table
+  const ds = React.useMemo(() => {
+    if (!allDomainScores.length) return [];
+    const first = allDomainScores[0];
+    return first.map((d, i) => {
+      const avg = allDomainScores.reduce((acc, curr) => acc + curr[i].avg, 0) / allDomainScores.length;
+      return { ...d, avg };
+    });
+  }, [allDomainScores]);
+
+  const latestScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight), 0) / finals.length : 0;
+  const avgScore = latestScore; // In this view, they are the same as we average everything in scope
   const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9' };
-  const ds = latest ? getDomainScores(latest, state.customWeights, teacherHRData, state.hrWeight) : [];
   const rubric = getRubric(currentType, state.customWeights);
   
   const isCollective = !observerFilter;
   const observer = state.observers.find(o => o.id === observerFilter);
   const reportTitle = isCollective ? "Collective Performance Evaluation Report" : `Observer Evaluation Report: ${observer?.name || 'Unknown'}`;
+
+  // Prepare data for the comparison chart
+  const observerIds = Array.from(new Set(finals.map(f => f.oid)));
+  const observersInReport = observerIds.map(id => state.observers.find(o => o.id === id)).filter(Boolean) as Observer[];
+
+  const comparisonData = React.useMemo(() => {
+    return ds.map((domain, dIdx) => {
+      const entry: any = { 
+        name: domain.name.replace(/D\d+: /, '').replace('D-HR: ', '').substring(0, 25),
+        full: domain.name 
+      };
+      
+      observersInReport.forEach(obs => {
+        const obsEvals = finals.filter(f => f.oid === obs.id);
+        if (obsEvals.length) {
+          const obsDs = obsEvals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight));
+          const avg = obsDs.reduce((acc, curr) => acc + curr[dIdx].avg, 0) / obsDs.length;
+          entry[obs.name] = parseFloat(avg.toFixed(2));
+        }
+      });
+      return entry;
+    });
+  }, [ds, observersInReport, finals, state.customWeights, teacherHRData, state.hrWeight]);
 
   const sm: Record<string, number> = {};
   const nm: Record<string, string> = {};
@@ -253,37 +294,52 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <div className="rmc"><div className="rmc-l">HR Weight</div><div className="rmc-v">{state.hrWeight}%</div></div>
             </div>
 
-            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', alignItems: 'center' }}>
-              <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>Domain Competency Profile</h2>
-                <div style={{ height: '300px' }}>
+            <div style={{ padding: '32px' }}>
+              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>
+                {isCollective ? 'Observer Comparison by Domain' : 'Domain Performance Profile'}
+              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: isCollective && observersInReport.length > 1 ? '1fr' : '1fr 1fr', gap: '32px', alignItems: 'start' }}>
+                <div style={{ height: Math.max(350, ds.length * 45), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-                      <PolarGrid stroke="var(--border)" />
-                      <PolarAngleAxis dataKey="name" tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--slate)' }} />
-                      <PolarRadiusAxis angle={30} domain={[0, 4]} tick={{ fontSize: 10 }} />
-                      <Radar name="Score" dataKey="avg" stroke={r.color} fill={r.color} fillOpacity={0.5} />
-                      <Tooltip />
-                    </RadarChart>
+                    <BarChart layout="vertical" data={comparisonData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
+                      <XAxis type="number" domain={[0, 4]} tick={{ fontSize: 10, fontWeight: 700 }} />
+                      <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--slate-dark)' }} />
+                      <Tooltip 
+                        cursor={{ fill: 'var(--bg)' }}
+                        contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                      />
+                      <Legend wrapperStyle={{ paddingTop: '20px' }} />
+                      {observersInReport.map((obs, i) => (
+                        <Bar 
+                          key={obs.id} 
+                          dataKey={obs.name} 
+                          fill={CHART_COLORS[i % CHART_COLORS.length]} 
+                          radius={[0, 4, 4, 0]} 
+                          barSize={observersInReport.length > 1 ? undefined : 24}
+                        />
+                      ))}
+                    </BarChart>
                   </ResponsiveContainer>
                 </div>
-              </div>
-              <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>Executive Summary</h3>
-                <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--slate-darker)' }}>
-                  This report summarizes the performance of <strong>{teacher.fullName}</strong> for the <strong>{TYPE_LABELS[currentType]}</strong> framework. 
-                  Based on <strong>{finals.length}</strong> evaluations, the overall score is <strong>{latestScore.toFixed(2)}</strong>, placing the teacher in the <strong>{r.label}</strong> category.
-                  {isCollective ? ' This collective view represents a consensus across multiple observers.' : ' This report reflects the specific observations of the selected evaluator.'}
-                </p>
-                <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
-                   <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Avg Score</div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--navy)' }}>{avgScore.toFixed(2)}</div>
-                   </div>
-                   <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Rating</div>
-                      <div style={{ fontSize: '16px', fontWeight: 900, color: r.color }}>{r.label}</div>
-                   </div>
+                
+                <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>Executive Summary</h3>
+                  <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--slate-darker)' }}>
+                    This report summarizes the performance of <strong>{teacher.fullName}</strong> for the <strong>{TYPE_LABELS[currentType]}</strong> framework. 
+                    Based on <strong>{finals.length}</strong> evaluations, the overall score is <strong>{latestScore.toFixed(2)}</strong>, placing the teacher in the <strong>{r.label}</strong> category.
+                    {isCollective ? ' This collective view represents a consensus across multiple observers.' : ' This report reflects the specific observations of the selected evaluator.'}
+                  </p>
+                  <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
+                     <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Avg Score</div>
+                        <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--navy)' }}>{avgScore.toFixed(2)}</div>
+                     </div>
+                     <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Rating</div>
+                        <div style={{ fontSize: '16px', fontWeight: 900, color: r.color }}>{r.label}</div>
+                     </div>
+                  </div>
                 </div>
               </div>
             </div>
