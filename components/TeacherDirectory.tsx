@@ -8,6 +8,7 @@ interface TeacherDirectoryProps {
   teachers: Teacher[];
   evaluations: Evaluation[];
   customWeights: Record<string, number[]>;
+  customSubjects?: string[];
   hrData?: HRData[];
   hrWeight?: number;
   hrRubric?: any;
@@ -17,7 +18,7 @@ interface TeacherDirectoryProps {
   onNavigate: (page: string, params?: any) => void;
 }
 
-const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
+const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, customSubjects, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -212,7 +213,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                 <label className="flabel">{t('dir.subject')}</label>
                 <select className="finput" value={newSubject} onChange={e => setNewSubject(e.target.value)}>
                   <option value="">{t('action.select')}…</option>
-                  {SUBJECTS.map(s => <option key={s}>{s}</option>)}
+                  {[...SUBJECTS, ...(customSubjects || [])].map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div className="field">

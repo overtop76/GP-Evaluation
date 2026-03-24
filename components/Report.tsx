@@ -301,8 +301,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>
                 {isCollective ? t('rep.obsComparison') : t('rep.domainProfile')}
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: isCollective && observersInReport.length > 1 ? '1fr' : '1fr 1fr', gap: '32px', alignItems: 'start' }}>
-                <div style={{ height: Math.max(350, ds.length * 45), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+              <div className={`grid gap-8 items-start ${isCollective && observersInReport.length > 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2 print:grid-cols-1'}`}>
+                <div style={{ height: Math.max(350, ds.length * 45), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }} className="print-break-inside-avoid">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart layout="vertical" data={comparisonData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
@@ -326,7 +326,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   </ResponsiveContainer>
                 </div>
                 
-                <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }} className="print-break-inside-avoid">
                   <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>{t('rep.execSummary')}</h3>
                   <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--slate-darker)' }}>
                     {t('rep.summaryText')
@@ -351,8 +351,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             </div>
 
-            <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }} className="page-break">
-              <div>
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start page-break print:grid-cols-1">
+              <div className="lg:col-span-2 print:col-span-1 print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>{t('rep.perfByDomain')}</h2>
                 <div style={{ height: Math.max(240, ds.length * 50 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
@@ -373,7 +373,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   </ResponsiveContainer>
                 </div>
               </div>
-              <div>
+              <div className="print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.overallRating')}</h2>
                 <div style={{ background: r.hex, border: `1px solid ${r.color}30`, borderRadius: '20px', padding: '32px', textAlign: 'center', borderTop: `6px solid ${r.color}`, boxShadow: 'var(--sh)' }}>
                   <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '80px', fontWeight: 900, color: r.color, lineHeight: 1 }}>{latestScore.toFixed(2)}</div>
@@ -428,7 +428,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             )}
 
-            <div style={{ padding: '0 32px 32px' }} className="page-break">
+            <div style={{ padding: '0 32px 32px' }} className="page-break print-break-inside-avoid">
               <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.domainBreakdown')}</h2>
               <div className="card" style={{ overflow: 'hidden' }}>
                 <table className="gtable">
@@ -460,9 +460,9 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             </div>
 
             {teacherHRData && (
-              <div style={{ padding: '0 32px 32px' }} className="page-break">
+              <div style={{ padding: '0 32px 32px' }} className="page-break print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.hrTitle')}</h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1">
                   <div className="card" style={{ padding: '24px' }}>
                     <div style={{ height: '200px' }}>
                       <ResponsiveContainer width="100%" height="100%">
@@ -519,8 +519,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             )}
 
-            <div style={{ padding: '0 32px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }} className="page-break">
-              <div>
+            <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 page-break print:grid-cols-1">
+              <div className="print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#15803d', marginBottom: '16px' }}>
                   {isCollective ? t('rep.commonStrengths') : t('rep.identifiedStrengths')} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span>
                 </h2>
@@ -538,7 +538,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   </div>
                 ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>{t('rep.noStrengths')}</div>}
               </div>
-              <div>
+              <div className="print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#dc2626', marginBottom: '16px' }}>
                   {isCollective ? t('rep.commonAreas') : t('rep.areasForDev')} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(1–2)</span>
                 </h2>
@@ -559,7 +559,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             </div>
 
             {latest && latest.comments && (
-              <div style={{ padding: '0 32px 32px' }}>
+              <div style={{ padding: '0 32px 32px' }} className="print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.evalSynthesis')}</h2>
                 <div className="card" style={{ padding: '24px', fontSize: '15px', lineHeight: 1.7, color: 'var(--slate)', background: 'var(--bg)', border: '1px solid var(--border)' }}>{latest.comments}</div>
               </div>
@@ -597,7 +597,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             </div>
 
-            <div style={{ padding: '0 32px 40px' }}>
+            <div style={{ padding: '0 32px 40px' }} className="print-break-inside-avoid">
               <div style={{ border: '1px solid var(--border)', borderRadius: '16px', padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', background: 'var(--white)' }}>
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--slate)', marginBottom: '8px' }}>{t('rep.evalSignature')}</div>

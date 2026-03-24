@@ -29,6 +29,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
   const [canPrintReports, setCanPrintReports] = useState(true);
   const [canViewReports, setCanViewReports] = useState(true);
+  const [canAddUser, setCanAddUser] = useState(false);
 
   const openModal = (user?: Observer) => {
     if (user) {
@@ -45,12 +46,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         setAllowedSubjects(user.permissions.allowedSubjects || []);
         setCanPrintReports(user.permissions.canPrintReports);
         setCanViewReports(user.permissions.canViewReports);
+        setCanAddUser(user.permissions.canAddUser || false);
       } else {
         setViewScopes(['all']);
         setAllowedStages([]);
         setAllowedSubjects([]);
         setCanPrintReports(true);
         setCanViewReports(true);
+        setCanAddUser(false);
       }
     } else {
       setEditingUser(null);
@@ -65,6 +68,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       setAllowedSubjects([]);
       setCanPrintReports(true);
       setCanViewReports(true);
+      setCanAddUser(false);
     }
     setShowModal(true);
   };
@@ -96,7 +100,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       allowedStages,
       allowedSubjects,
       canPrintReports,
-      canViewReports
+      canViewReports,
+      canAddUser
     };
     
     if (editingUser && onUpdateUser) {
@@ -383,6 +388,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={canPrintReports} onChange={e => setCanPrintReports(e.target.checked)} />
                     <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>{t('user.canPrintReports')}</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={canAddUser} onChange={e => setCanAddUser(e.target.checked)} />
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>Can Add Users</span>
                   </label>
                 </div>
               </div>

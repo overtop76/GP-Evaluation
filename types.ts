@@ -15,6 +15,7 @@ export interface ObserverPermissions {
   allowedSubjects?: string[];
   canPrintReports: boolean;
   canViewReports: boolean;
+  canAddUser?: boolean;
 }
 
 export interface Observer {
@@ -81,6 +82,7 @@ export interface AppState {
   hrData: HRData[];
   hrWeight: number;
   hrRubric: HRRubricThresholds;
+  customSubjects?: string[];
 }
 
 // Rubric Types

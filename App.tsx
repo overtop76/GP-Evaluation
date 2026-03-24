@@ -14,7 +14,7 @@ import HRAttendance from './components/HRAttendance';
 import EvaluationHistory from './components/EvaluationHistory';
 
 const AppContent: React.FC = () => {
-  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, toasts } = useApp();
+  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, updateCustomSubjects, toasts } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evalParams, setEvalParams] = useState<any>({});
 
@@ -47,6 +47,7 @@ const AppContent: React.FC = () => {
           setActiveTab={() => {}} 
           userRole={state.currentUser.role} 
           userName={state.currentUser.name}
+          currentUser={state.currentUser}
           onLogout={logout}
         />
         <div id="main">
@@ -67,6 +68,7 @@ const AppContent: React.FC = () => {
           setActiveTab={setActiveTab} 
           userRole={state.currentUser.role} 
           userName={state.currentUser.name}
+          currentUser={state.currentUser}
           onLogout={logout}
         />
         <div id="main">
@@ -95,6 +97,7 @@ const AppContent: React.FC = () => {
           teachers={state.teachers} 
           evaluations={state.evaluations} 
           customWeights={state.customWeights}
+          customSubjects={state.customSubjects}
           hrData={state.hrData}
           hrWeight={state.hrWeight}
           hrRubric={state.hrRubric}
@@ -152,6 +155,7 @@ const AppContent: React.FC = () => {
           onResetSystem={resetSystem} 
           onUpdateHRWeight={updateHRWeight}
           onUpdateHRRubric={updateHRRubric}
+          onUpdateCustomSubjects={updateCustomSubjects}
         />;
       default:
         return <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={deleteEvaluation} />;
@@ -165,6 +169,7 @@ const AppContent: React.FC = () => {
         setActiveTab={setActiveTab} 
         userRole={state.currentUser!.role} 
         userName={state.currentUser!.name}
+        currentUser={state.currentUser!}
         onLogout={logout}
       />
       <div id="main">

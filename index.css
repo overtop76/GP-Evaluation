@@ -398,6 +398,9 @@
     width: 100% !important;
     height: 300px !important;
   }
+  .print-break-inside-avoid {
+    break-inside: avoid !important;
+  }
 }
 
 * {

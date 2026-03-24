@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserRole } from '../types';
+import { UserRole, Observer } from '../types';
 import { ini } from '../utils/helpers';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
@@ -9,11 +9,13 @@ interface SidebarProps {
   setActiveTab: (tab: string) => void;
   userRole: UserRole;
   userName: string;
+  currentUser: Observer;
   onLogout: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, userName, onLogout }) => {
+const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, userName, currentUser, onLogout }) => {
   const isAdmin = userRole === 'admin';
+  const canManageUsers = isAdmin || currentUser.permissions?.canAddUser;
   const { t, language, setLanguage } = useLanguage();
   const { dbStatus } = useApp();
   const [darkMode, setDarkMode] = React.useState(() => {
@@ -76,14 +78,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, us
             <button className={`nav-btn ${activeTab === 'evaluate' ? 'active' : ''}`} onClick={() => setActiveTab('evaluate')}>
               <span className="material-icons-outlined mi">assignment_add</span>{t('nav.newEval')}
             </button>
-            {isAdmin && (
+            {canManageUsers && (
               <>
                 <div className="sb-sec">{t('nav.admin')}</div>
-                <button className={`nav-btn ${activeTab === 'hr' ? 'active' : ''}`} onClick={() => setActiveTab('hr')}>
-                  <span className="material-icons-outlined mi">event_available</span>{t('nav.hr')}
-                </button>
                 <button className={`nav-btn ${activeTab === 'observers' ? 'active' : ''}`} onClick={() => setActiveTab('observers')}>
                   <span className="material-icons-outlined mi">manage_accounts</span>{t('nav.userManagement')}
+                </button>
+              </>
+            )}
+            {isAdmin && (
+              <>
+                <button className={`nav-btn ${activeTab === 'hr' ? 'active' : ''}`} onClick={() => setActiveTab('hr')}>
+                  <span className="material-icons-outlined mi">event_available</span>{t('nav.hr')}
                 </button>
                 <button className={`nav-btn ${activeTab === 'audit' ? 'active' : ''}`} onClick={() => setActiveTab('audit')}>
                   <span className="material-icons-outlined mi">history</span>{t('nav.auditLog')}

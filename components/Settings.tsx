@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
-import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF } from '../constants';
+import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF, SUBJECTS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 
 interface SettingsProps {
@@ -10,13 +10,33 @@ interface SettingsProps {
   onResetSystem: () => void;
   onUpdateHRWeight: (weight: number) => void;
   onUpdateHRRubric: (rubric: AppState['hrRubric']) => void;
+  onUpdateCustomSubjects: (subjects: string[]) => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeights, onResetSystem, onUpdateHRWeight, onUpdateHRRubric }) => {
+const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeights, onResetSystem, onUpdateHRWeight, onUpdateHRRubric, onUpdateCustomSubjects }) => {
   const { t } = useLanguage();
   const [editingWeights, setEditingWeights] = useState<Record<string, number[]>>({});
   const [hrWeight, setHrWeight] = useState(state.hrWeight || 5);
   const [hrRubric, setHrRubric] = useState(state.hrRubric);
+  const [newSubject, setNewSubject] = useState('');
+
+  const handleAddSubject = () => {
+    const trimmed = newSubject.trim();
+    if (!trimmed) return;
+    const currentSubjects = state.customSubjects || [];
+    if (currentSubjects.some(s => s.toLowerCase() === trimmed.toLowerCase()) || SUBJECTS.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
+      alert('Subject already exists');
+      return;
+    }
+    onUpdateCustomSubjects([...currentSubjects, trimmed]);
+    setNewSubject('');
+  };
+
+  const handleRemoveSubject = (subject: string) => {
+    if (confirm(`Remove subject "${subject}"?`)) {
+      onUpdateCustomSubjects((state.customSubjects || []).filter(s => s !== subject));
+    }
+  };
 
   const getWeights = (type: string) => {
     if (editingWeights[type]) return editingWeights[type];
@@ -163,6 +183,44 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
               </div>
             </div>
           ))}
+        </div>
+      </div>
+
+      <div className="card-xl" style={{ padding: '32px', marginBottom: '32px' }}>
+        <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>Custom Subjects</h2>
+        <p style={{ fontSize: '15px', color: 'var(--slate)', marginBottom: '24px' }}>Add custom subjects to the faculty creation dropdown.</p>
+        
+        <div className="frow" style={{ gap: '16px', marginBottom: '24px' }}>
+          <input 
+            type="text" 
+            className="finput" 
+            placeholder="Enter subject name..." 
+            value={newSubject}
+            onChange={e => setNewSubject(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddSubject()}
+            style={{ flex: 1, maxWidth: '400px' }}
+          />
+          <button className="btn btn-primary" onClick={handleAddSubject}>
+            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>add</span> Add Subject
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+          {(state.customSubjects || []).map(subject => (
+            <div key={subject} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg)', padding: '8px 16px', borderRadius: '20px', border: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>{subject}</span>
+              <button 
+                onClick={() => handleRemoveSubject(subject)}
+                style={{ background: 'none', border: 'none', color: '#dc2626', cursor: 'pointer', display: 'flex', padding: '4px', borderRadius: '50%' }}
+                title="Remove subject"
+              >
+                <span className="material-icons-outlined" style={{ fontSize: '16px' }}>close</span>
+              </button>
+            </div>
+          ))}
+          {!(state.customSubjects?.length) && (
+            <div style={{ fontSize: '14px', color: 'var(--slate)', fontStyle: 'italic' }}>No custom subjects added yet.</div>
+          )}
         </div>
       </div>
 

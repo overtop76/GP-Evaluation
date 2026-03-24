@@ -47,6 +47,7 @@ interface AppContextType {
   updateHRData: (data: HRData) => void;
   updateHRWeight: (weight: number) => void;
   updateHRRubric: (rubric: AppState['hrRubric']) => void;
+  updateCustomSubjects: (subjects: string[]) => void;
   resetSystem: () => void;
   toasts: { id: string; msg: string; type: string }[];
   showToast: (msg: string, type?: 'success' | 'error' | 'info' | 'warning') => void;
@@ -130,7 +131,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev,
           customWeights: data.customWeights || {},
           hrWeight: data.hrWeight ?? 5,
-          hrRubric: data.hrRubric || INIT_STATE.hrRubric
+          hrRubric: data.hrRubric || INIT_STATE.hrRubric,
+          customSubjects: data.customSubjects || []
         }));
         setDbStatus('connected');
       }
@@ -259,6 +261,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       customWeights: state.customWeights,
       hrWeight: state.hrWeight,
       hrRubric: state.hrRubric,
+      customSubjects: state.customSubjects || [],
       ...updates
     };
     setDoc(doc(db, 'settings', 'main'), currentSettings, { merge: true }).catch(console.error);
@@ -297,6 +300,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     showToast('HR rubric updated.', 'success');
   };
 
+  const updateCustomSubjects = (subjects: string[]) => {
+    updateSettings({ customSubjects: subjects });
+    addLog('UPDATE_SUBJECTS', 'Updated custom subjects', 'UPDATE');
+    showToast('Subjects updated.', 'success');
+  };
+
   const resetSystem = () => {
     // Note: Resetting the entire system with the new schema requires deleting all docs in all collections.
     // For simplicity, we just show a toast or implement a basic reset.
@@ -320,6 +329,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     updateHRData,
     updateHRWeight,
     updateHRRubric,
+    updateCustomSubjects,
     resetSystem,
     toasts,
     showToast
