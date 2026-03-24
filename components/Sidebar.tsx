@@ -2,6 +2,7 @@ import React from 'react';
 import { UserRole } from '../types';
 import { ini } from '../utils/helpers';
 import { useLanguage } from '../context/LanguageContext';
+import { useApp } from '../context/AppContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -14,6 +15,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, userName, onLogout }) => {
   const isAdmin = userRole === 'admin';
   const { t, language, setLanguage } = useLanguage();
+  const { dbStatus } = useApp();
   const [darkMode, setDarkMode] = React.useState(() => {
     return localStorage.getItem('gp_theme') === 'dark';
   });
@@ -95,6 +97,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, userRole, us
         )}
       </nav>
       <div className="sb-foot shrink-0" style={{ padding: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px', fontSize: '11px', fontWeight: 600, color: 'var(--slate)' }}>
+          <div style={{
+            width: '8px', height: '8px', borderRadius: '50%',
+            backgroundColor: dbStatus === 'connected' ? '#10b981' : dbStatus === 'error' ? '#ef4444' : '#f59e0b',
+            boxShadow: `0 0 8px ${dbStatus === 'connected' ? '#10b98180' : dbStatus === 'error' ? '#ef444480' : '#f59e0b80'}`
+          }} />
+          {dbStatus === 'connected' ? 'Database Connected' : dbStatus === 'error' ? 'Database Error' : 'Connecting...'}
+        </div>
         <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
           <button 
             className="btn btn-ghost" 

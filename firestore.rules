@@ -9,7 +9,22 @@ service cloud.firestore {
     // Since the app uses its own custom authentication system (not Firebase Auth),
     // we allow any authenticated anonymous user to read/write the app data.
     // WARNING: This is a prototype rule and is NOT secure for production.
-    match /appData/{document=**} {
+    match /teachers/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /observers/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /evaluations/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /logs/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /hrData/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+    match /settings/{document=**} {
       allow read, write: if isAuthenticated();
     }
   }
