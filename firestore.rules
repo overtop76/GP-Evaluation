@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Since the app uses its own custom authentication system (not Firebase Auth),
+    // we allow any authenticated anonymous user to read/write the app data.
+    // WARNING: This is a prototype rule and is NOT secure for production.
+    match /appData/{document=**} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

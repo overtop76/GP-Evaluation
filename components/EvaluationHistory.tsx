@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Evaluation, Teacher, Observer } from '../types';
 import { fmtD, ini } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface EvaluationHistoryProps {
   evaluations: Evaluation[];
@@ -13,12 +14,13 @@ interface EvaluationHistoryProps {
 }
 
 const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teachers, observers, onNavigate, onDelete, currentUser }) => {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
 
   const filtered = React.useMemo(() => evaluations.filter(e => {
-    const teacher = teachers.find(t => t.id === e.tid);
+    const teacher = teachers.find(tData => tData.id === e.tid);
     const observer = observers.find(o => o.id === e.oid);
     
     const matchesSearch = 
@@ -37,8 +39,8 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
   return (
     <div className="page">
       <div className="ph">
-        <h1 className="ph-title">Evaluation History</h1>
-        <p className="ph-sub">Review and manage all past evaluation sessions.</p>
+        <h1 className="ph-title">{t('hist.title')}</h1>
+        <p className="ph-sub">{t('hist.sub')}</p>
       </div>
 
       <div className="card-xl" style={{ overflow: 'hidden' }}>
@@ -47,22 +49,22 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
             <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate)', fontSize: '20px' }}>search</span>
             <input 
               className="finput" 
-              placeholder="Search by teacher or observer…" 
+              placeholder={t('hist.search')} 
               style={{ paddingLeft: '42px' }}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
           <select className="finput" style={{ width: 'auto' }} value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
-            <option value="all">All Types</option>
+            <option value="all">{t('hist.allTypes')}</option>
             {Object.entries(TYPE_LABELS).map(([val, lbl]) => (
-              <option key={val} value={val}>{lbl}</option>
+              <option key={val} value={val}>{t(`type.${val}`) || lbl}</option>
             ))}
           </select>
           <select className="finput" style={{ width: 'auto' }} value={statusFilter} onChange={e => setStatusFilter(e.target.value)}>
-            <option value="all">All Status</option>
-            <option value="final">Finalized</option>
-            <option value="draft">Drafts</option>
+            <option value="all">{t('hist.allStatus')}</option>
+            <option value="final">{t('hist.finalized')}</option>
+            <option value="draft">{t('hist.drafts')}</option>
           </select>
         </div>
 
@@ -70,17 +72,17 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
           <table className="gtable">
             <thead>
               <tr>
-                <th style={{ paddingLeft: '24px' }}>Date</th>
-                <th>Teacher</th>
-                <th>Observer</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th style={{ textAlign: 'right', paddingRight: '24px' }}>Actions</th>
+                <th style={{ paddingLeft: '24px' }}>{t('eval.date')}</th>
+                <th>{t('hist.teacher')}</th>
+                <th>{t('eval.observer')}</th>
+                <th>{t('hist.type')}</th>
+                <th>{t('hist.status')}</th>
+                <th style={{ textAlign: 'right', paddingRight: '24px' }}>{t('hist.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.length > 0 ? filtered.map(e => {
-                const teacher = teachers.find(t => t.id === e.tid);
+                const teacher = teachers.find(tData => tData.id === e.tid);
                 const observer = observers.find(o => o.id === e.oid);
                 return (
                   <tr key={e.id}>
@@ -97,26 +99,30 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
                       <div style={{ fontSize: '13px', color: 'var(--slate-dark)' }}>{observer?.name}</div>
                     </td>
                     <td>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>{TYPE_LABELS[e.type]}</span>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>{t(`type.${e.type}`) || TYPE_LABELS[e.type]}</span>
                     </td>
                     <td>
                       <span className={`badge ${e.draft ? 'b-uns' : 'b-ex'}`} style={{ fontSize: '10px' }}>
-                        {e.draft ? 'Draft' : 'Finalized'}
+                        {e.draft ? t('hist.draft') : t('hist.finalized')}
                       </span>
                     </td>
                     <td style={{ textAlign: 'right', paddingRight: '24px' }}>
                       <div className="frow" style={{ gap: '8px', justifyContent: 'flex-end' }}>
                         {e.draft ? (
                           <button className="btn btn-primary btn-sm" onClick={() => onNavigate('evaluate', { eid: e.id })}>
-                            <span className="material-icons" style={{ fontSize: '16px' }}>edit</span> Resume
+                            <span className="material-icons" style={{ fontSize: '16px' }}>edit</span> {t('hist.resume')}
                           </button>
                         ) : (
                           <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: e.tid, type: e.type })}>
-                            <span className="material-icons" style={{ fontSize: '16px' }}>visibility</span> View Report
+                            <span className="material-icons" style={{ fontSize: '16px' }}>visibility</span> {t('hist.viewReport')}
                           </button>
                         )}
                         {(currentUser.role === 'admin' || e.oid === currentUser.id) && (
-                          <button className="icon-btn" onClick={() => onDelete(e.id)}>
+                          <button className="icon-btn" onClick={() => {
+                            if (window.confirm(t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?')) {
+                              onDelete(e.id);
+                            }
+                          }}>
                             <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete</span>
                           </button>
                         )}
@@ -127,7 +133,7 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
               }) : (
                 <tr>
                   <td colSpan={6} style={{ textAlign: 'center', padding: '48px' }}>
-                    <div style={{ color: 'var(--slate)', fontStyle: 'italic' }}>No evaluations found matching filters.</div>
+                    <div style={{ color: 'var(--slate)', fontStyle: 'italic' }}>{t('hist.noEvals')}</div>
                   </td>
                 </tr>
               )}

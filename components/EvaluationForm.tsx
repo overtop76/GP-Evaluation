@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Teacher, Observer, Evaluation, Score } from '../types';
 import { getRubric, countInds, uid } from '../utils/helpers';
 import { TYPE_LABELS, LEVEL_LABELS, LEVEL_COLORS, LEVEL_BG } from '../constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface EvaluationFormProps {
   teachers: Teacher[];
@@ -14,6 +15,7 @@ interface EvaluationFormProps {
 }
 
 const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, customWeights, initialData, currentUser, onSave, onCancel }) => {
+  const { t } = useLanguage();
   const [type, setType] = useState(initialData?.type || 'gp');
   const [tid, setTid] = useState(initialData?.tid || '');
   const [oid, setOid] = useState(initialData?.oid || currentUser.id);
@@ -64,11 +66,11 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
 
   const handleSave = (draft: boolean) => {
     if (!tid) {
-      alert('Select a staff member first.');
+      alert(t('eval.alertSelectStaff'));
       return;
     }
     if (!draft && (!oid || !isComplete)) {
-      alert('Please complete all fields and scores before finalizing.');
+      alert(t('eval.alertComplete'));
       return;
     }
 
@@ -90,16 +92,16 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
     onSave(ev);
   };
 
-  const changeType = (t: string) => {
-    if (type === t) return;
+  const changeType = (tKey: string) => {
+    if (type === tKey) return;
     if (Object.keys(scores).length > 0) {
-      if (confirm('Switching frameworks will reset all current scores. Continue?')) {
-        setType(t);
+      if (confirm(t('eval.confirmSwitch'))) {
+        setType(tKey);
         setScores({});
         setDi(0);
       }
     } else {
-      setType(t);
+      setType(tKey);
       setDi(0);
     }
   };
@@ -113,14 +115,14 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
       <div className="ph" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <button className="btn btn-ghost btn-sm no-print" style={{ marginBottom: '12px' }} onClick={onCancel}>
-            <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> Back
+            <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> {t('action.back')}
           </button>
-          <h1 className="ph-title">Observation Session</h1>
-          <p className="ph-sub">{initialData?.id ? 'Resuming saved draft' : 'New evaluation'} — {total} indicators total</p>
+          <h1 className="ph-title">{t('eval.title')}</h1>
+          <p className="ph-sub">{initialData?.id ? t('eval.resuming') : t('eval.new')} — {total} {t('eval.indicatorsTotal')}</p>
         </div>
         <div className="frow" style={{ gap: '16px', background: 'var(--white)', padding: '10px 16px', borderRadius: '16px', boxShadow: 'var(--sh)' }}>
           <div>
-            <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--slate)' }}>Progress</div>
+            <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--slate)' }}>{t('eval.progress')}</div>
             <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', lineHeight: 1 }}>
               {done} <span style={{ color: 'var(--border-hover)', fontSize: '16px' }}>/ {total}</span>
             </div>
@@ -141,7 +143,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
           </div>
           <div style={{ width: '1px', height: '32px', background: 'var(--border)' }}></div>
           <button className="btn btn-ghost no-print" onClick={() => handleSave(true)}>
-            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>save</span> Save Draft
+            <span className="material-icons-outlined" style={{ fontSize: '18px' }}>save</span> {t('eval.saveDraft')}
           </button>
         </div>
       </div>
@@ -149,23 +151,23 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
       <div className="card-xl" style={{ overflow: 'hidden', marginBottom: '24px' }}>
         <div style={{ background: 'var(--bg)', padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
           <div className="tbar">
-            {Object.keys(TYPE_LABELS).map(t => (
-              <button key={t} className={`tbtn ${type === t ? 'active' : ''}`} onClick={() => changeType(t)}>{TYPE_LABELS[t]}</button>
+            {Object.keys(TYPE_LABELS).map(tKey => (
+              <button key={tKey} className={`tbtn ${type === tKey ? 'active' : ''}`} onClick={() => changeType(tKey)}>{t(`type.${tKey}`) || TYPE_LABELS[tKey]}</button>
             ))}
           </div>
         </div>
         <div style={{ padding: '24px', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="flabel">Staff Member</label>
+            <label className="flabel">{t('eval.selectStaff')}</label>
             <select className="finput" value={tid} onChange={e => setTid(e.target.value)}>
-              <option value="">— Select Staff Member —</option>
-              {allowedTeachers.map(t => <option key={t.id} value={t.id}>{t.fullName} · {t.role}</option>)}
+              <option value="">— {t('eval.selectStaff')} —</option>
+              {allowedTeachers.map(tData => <option key={tData.id} value={tData.id}>{tData.fullName} · {tData.role}</option>)}
             </select>
           </div>
           <div className="field" style={{ marginBottom: 0 }}>
-            <label className="flabel">Evaluator / Observer</label>
+            <label className="flabel">{t('eval.observer')}</label>
             <select className="finput" value={oid} onChange={e => setOid(e.target.value)} disabled={currentUser.role !== 'admin'}>
-              <option value="">— Select Evaluator —</option>
+              <option value="">— {t('eval.observer')} —</option>
               {observers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </div>
@@ -190,10 +192,10 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             <div className="dom-hdr">
               <div>
                 <div className="dom-name">{domain.domain}</div>
-                <div className="dom-meta">Area {di + 1} of {rubric.length} &nbsp;·&nbsp; Weight: {domain.weight}%</div>
+                <div className="dom-meta">{t('eval.area')} {di + 1} {t('eval.of')} {rubric.length} &nbsp;·&nbsp; {t('eval.weight')}: {domain.weight}%</div>
               </div>
               <div>
-                <div className="dp-lbl">Area Progress</div>
+                <div className="dp-lbl">{t('eval.areaProgress')}</div>
                 <div className="dp-val">{domDone} <span style={{ color: 'rgba(255,255,255,.3)', fontSize: '20px' }}>/ {domInds.length}</span></div>
               </div>
             </div>
@@ -207,7 +209,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
                     <div className="ind-block" key={ind.id}>
                       <div className="ind-meta">
                         <span className="ind-id">{ind.id}</span>
-                        <span className="ind-ev">Evidence: {ind.evidence}</span>
+                        <span className="ind-ev">{t('eval.evidence')}: {ind.evidence}</span>
                       </div>
                       <div className="ind-text">{ind.text}</div>
                       <div className="sgrid">
@@ -224,18 +226,18 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
                             }}
                           >
                             <span className="snum" style={{ color: sel === v ? '#fff' : LEVEL_COLORS[v] }}>{v}</span>
-                            <span className="slbl" style={{ color: sel === v ? 'rgba(255,255,255,.9)' : LEVEL_COLORS[v] }}>{LEVEL_LABELS[v]}</span>
+                            <span className="slbl" style={{ color: sel === v ? 'rgba(255,255,255,.9)' : LEVEL_COLORS[v] }}>{t(`lvl.${v}`) || LEVEL_LABELS[v]}</span>
                           </button>
                         ))}
                       </div>
                       {sel ? (
                         <div className="desc-box vis" style={{ background: LEVEL_BG[sel], borderLeftColor: LEVEL_COLORS[sel] }}>
-                          <strong style={{ color: LEVEL_COLORS[sel], textTransform: 'uppercase', fontSize: '11px', letterSpacing: '.05em' }}>{LEVEL_LABELS[sel]} Performance:</strong>
+                          <strong style={{ color: LEVEL_COLORS[sel], textTransform: 'uppercase', fontSize: '11px', letterSpacing: '.05em' }}>{t(`lvl.${sel}`) || LEVEL_LABELS[sel]} {t('eval.performance')}:</strong>
                           <div style={{ marginTop: '4px' }}>{ind.levels[sel]}</div>
                         </div>
                       ) : (
                         <div className="desc-box vis" style={{ background: 'var(--bg)', borderLeftColor: 'var(--border-hover)', color: 'var(--slate)', fontStyle: 'italic' }}>
-                          Select a score to view the performance descriptor.
+                          {t('eval.selectScore')}
                         </div>
                       )}
                       
@@ -243,7 +245,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
                         <textarea 
                           className="finput" 
                           style={{ minHeight: '60px', fontSize: '13px', padding: '10px' }}
-                          placeholder="Add evidence or notes..."
+                          placeholder={t('eval.addNotes')}
                           value={notes[ind.id] || ''}
                           onChange={e => setNotes(prev => ({ ...prev, [ind.id]: e.target.value }))}
                         />
@@ -257,13 +259,13 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             <div className="form-nav no-print">
               <div className="frow" style={{ gap: '12px' }}>
                 <button className="btn btn-ghost" onClick={() => setDi(di - 1)} disabled={di === 0}>
-                  <span className="material-icons" style={{ fontSize: '18px' }}>chevron_left</span> Previous Area
+                  <span className="material-icons" style={{ fontSize: '18px' }}>chevron_left</span> {t('eval.prevArea')}
                 </button>
                 <button className="btn btn-ghost" onClick={() => setDi(di + 1)} disabled={di === rubric.length - 1}>
-                  Next Area <span className="material-icons" style={{ fontSize: '18px' }}>chevron_right</span>
+                  {t('eval.nextArea')} <span className="material-icons" style={{ fontSize: '18px' }}>chevron_right</span>
                 </button>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate)' }}>{done} of {total} indicators scored</span>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate)' }}>{done} {t('eval.of')} {total} {t('eval.indicatorsScored')}</span>
             </div>
           </>
         )}
@@ -271,11 +273,11 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
 
       <div className="card-xl" style={{ padding: '28px' }}>
         <div className="field">
-          <label className="flabel">Professional Synthesis & Required Actions</label>
+          <label className="flabel">{t('eval.synthesis')}</label>
           <textarea 
             className="finput" 
             style={{ minHeight: '140px', resize: 'vertical', fontSize: '15px', lineHeight: 1.6 }} 
-            placeholder="Enter formal feedback, commendations, or areas for immediate intervention…"
+            placeholder={t('eval.synthesisPlaceholder')}
             value={comments}
             onChange={e => setComments(e.target.value)}
           />
@@ -286,7 +288,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             style={{ flex: 1, justifyContent: 'center', padding: '18px', fontSize: '14px', border: '1px solid var(--border)' }}
             onClick={() => handleSave(true)}
           >
-            <span className="material-icons-outlined">save</span> Save Draft
+            <span className="material-icons-outlined">save</span> {t('eval.saveDraft')}
           </button>
           <button 
             className={`btn ${isComplete ? 'btn-primary' : 'btn-ghost'}`} 
@@ -295,7 +297,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             onClick={() => handleSave(false)}
           >
             <span className="material-icons">{isComplete ? 'check_circle' : 'lock'}</span> 
-            {isComplete ? 'Finalize & Lock Evaluation' : `${total - done} indicator${total - done !== 1 ? 's' : ''} remaining to finalize`}
+            {isComplete ? t('eval.finalize') : `${total - done} ${t('eval.remaining')}`}
           </button>
         </div>
       </div>

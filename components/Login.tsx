@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Observer } from '../types';
 import { uid, hashPassword } from '../utils/helpers';
+import { useLanguage } from '../context/LanguageContext';
 
 interface LoginProps {
   observers: Observer[];
@@ -9,6 +10,7 @@ interface LoginProps {
 }
 
 const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
+  const { t, language, setLanguage } = useLanguage();
   const [activeTab, setActiveTab] = useState<'signin' | 'register'>('signin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -37,28 +39,28 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
         if (hashed === user.hash) {
           onLogin(user);
         } else {
-          setError('Invalid credentials. Please try again.');
+          setError(t('log.invalid'));
         }
       }
     } else {
-      setError('Invalid credentials. Please try again.');
+      setError(t('log.invalid'));
     }
     setLoading(false);
   };
 
   const handleRegister = async () => {
     if (!regName || !regEmail || !regPassword) {
-      setError('Please fill in all fields.');
+      setError(t('user.fillAll'));
       return;
     }
 
     if (!regEmail.endsWith('@globalparadigmschools.com')) {
-      setError('Only @globalparadigmschools.com emails are allowed.');
+      setError(t('user.onlyGPEmails'));
       return;
     }
 
     if (regPassword.length < 8) {
-      setError('Password must be at least 8 characters.');
+      setError(t('user.passMin8'));
       return;
     }
 
@@ -71,7 +73,7 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
     const username = regEmail.split('@')[0].toLowerCase();
     
     if (observers.find(o => o.username === username || o.email === regEmail.toLowerCase())) {
-      setError('User already exists.');
+      setError(t('user.exists'));
       setLoading(false);
       return;
     }
@@ -103,7 +105,17 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
   };
 
   return (
-    <div id="login-wrap" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-bg)', padding: '20px' }}>
+    <div id="login-wrap" style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: 'var(--navy-bg)', padding: '20px', position: 'relative' }}>
+      <div style={{ position: 'absolute', top: '20px', [language === 'ar' ? 'left' : 'right']: '20px', display: 'flex', gap: '12px' }}>
+        <button 
+          className="btn btn-ghost" 
+          style={{ padding: '8px 16px', fontSize: '14px', fontWeight: 600, background: 'var(--white)', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', borderRadius: '12px' }}
+          onClick={() => setLanguage(language === 'en' ? 'ar' : 'en')}
+        >
+          <span className="material-icons-outlined" style={{ fontSize: '18px', marginRight: '8px', verticalAlign: 'middle' }}>language</span>
+          <span style={{ verticalAlign: 'middle' }}>{language === 'en' ? 'العربية' : 'English'}</span>
+        </button>
+      </div>
       <div className="login-card">
         <div className="lhead">
           <img 
@@ -112,8 +124,8 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
             referrerPolicy="no-referrer"
             style={{ width: '80px', height: '80px', marginBottom: '16px', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
           />
-          <div className="ltitle">Global Paradigm</div>
-          <div className="lsub">Evaluation & Accreditation System</div>
+          <div className="ltitle">{t('log.welcome')}</div>
+          <div className="lsub">{t('log.sub')}</div>
         </div>
         <div className="lbody">
           <div className="frow" style={{ background: 'var(--bg)', padding: '6px', borderRadius: '12px', marginBottom: '24px', gap: '4px' }}>
@@ -122,14 +134,14 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
               style={{ flex: 1, fontSize: '12px', padding: '10px', background: activeTab === 'signin' ? 'var(--blue)' : 'transparent', color: activeTab === 'signin' ? '#fff' : 'var(--slate)', boxShadow: activeTab === 'signin' ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none' }}
               onClick={() => { setActiveTab('signin'); setError(''); }}
             >
-              SIGN IN
+              {t('log.signIn')}
             </button>
             <button 
               className={`btn ${activeTab === 'register' ? 'btn-primary' : 'btn-ghost'}`} 
               style={{ flex: 1, fontSize: '12px', padding: '10px', background: activeTab === 'register' ? 'var(--blue)' : 'transparent', color: activeTab === 'register' ? '#fff' : 'var(--slate)', boxShadow: activeTab === 'register' ? '0 4px 12px rgba(37, 99, 235, 0.2)' : 'none' }}
               onClick={() => { setActiveTab('register'); setError(''); }}
             >
-              REGISTER OBSERVER
+              {t('dir.register')}
             </button>
           </div>
 
@@ -143,13 +155,13 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
           {activeTab === 'signin' ? (
             <>
               <div className="field">
-                <label className="flabel">Email Address or Username</label>
+                <label className="flabel">{t('log.username')}</label>
                 <div style={{ position: 'relative' }}>
                   <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--border-hover)', fontSize: '19px', pointerEvents: 'none' }}>person</span>
                   <input 
                     className="finput" 
                     type="text" 
-                    placeholder="Enter your school email" 
+                    placeholder={t('log.username')} 
                     style={{ paddingLeft: '40px' }} 
                     autoComplete="username"
                     value={username}
@@ -159,14 +171,14 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                 </div>
               </div>
               <div className="field">
-                <label className="flabel">Password</label>
+                <label className="flabel">{t('log.password')}</label>
                 <div style={{ position: 'relative' }}>
                   <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--border-hover)', fontSize: '19px', pointerEvents: 'none' }}>lock</span>
                   <input 
                     id="lpass"
                     className="finput" 
                     type={showPass ? 'text' : 'password'} 
-                    placeholder="Enter your password" 
+                    placeholder={t('log.password')} 
                     style={{ paddingLeft: '40px' }} 
                     autoComplete="current-password"
                     value={password}
@@ -192,11 +204,11 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                 {loading ? (
                   <>
                     <span className="spin" style={{ width: '17px', height: '17px', border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', marginRight: '6px', verticalAlign: 'middle' }}></span>
-                    Authenticating...
+                    {t('log.authenticating')}
                   </>
                 ) : (
                   <>
-                    <span className="material-icons" style={{ fontSize: '17px' }}>login</span> SIGN IN
+                    <span className="material-icons" style={{ fontSize: '17px' }}>login</span> {t('log.signIn')}
                   </>
                 )}
               </button>
@@ -206,24 +218,24 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                   style={{ fontSize: '13px', color: 'var(--blue)', fontWeight: 700 }}
                   onClick={() => setActiveTab('register')}
                 >
-                  Need an account? Register here
+                  {t('log.needAccount')}
                 </button>
               </div>
             </>
           ) : (
             <>
               <div className="field">
-                <label className="flabel">Full Name</label>
+                <label className="flabel">{t('user.fullName')}</label>
                 <input 
                   className="finput" 
                   type="text" 
-                  placeholder="Enter your full name" 
+                  placeholder={t('user.fullName')} 
                   value={regName}
                   onChange={e => setRegName(e.target.value)}
                 />
               </div>
               <div className="field">
-                <label className="flabel">Observer Email</label>
+                <label className="flabel">{t('user.email')}</label>
                 <div style={{ position: 'relative' }}>
                   <span className="material-icons-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '18px' }}>email</span>
                   <input 
@@ -236,13 +248,13 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                 </div>
               </div>
               <div className="field">
-                <label className="flabel">Create Password</label>
+                <label className="flabel">{t('user.password')}</label>
                 <div style={{ position: 'relative' }}>
                   <span className="material-icons-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate)', fontSize: '18px' }}>lock</span>
                   <input 
                     className="finput" 
                     type="password" 
-                    placeholder="At least 8 characters" 
+                    placeholder={t('log.min8chars')} 
                     value={regPassword}
                     onChange={e => setRegPassword(e.target.value)}
                   />
@@ -257,11 +269,11 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                 {loading ? (
                   <>
                     <span className="spin" style={{ width: '17px', height: '17px', border: '2px solid rgba(255,255,255,.3)', borderTopColor: '#fff', marginRight: '6px', verticalAlign: 'middle' }}></span>
-                    Creating Account...
+                    {t('log.creatingAccount')}
                   </>
                 ) : (
                   <>
-                    <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> CREATE OBSERVER ACCOUNT
+                    <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> {t('log.createAccount')}
                   </>
                 )}
               </button>
@@ -271,16 +283,16 @@ const Login: React.FC<LoginProps> = ({ observers, onLogin, onRegister }) => {
                   style={{ fontSize: '13px', color: 'var(--blue)', fontWeight: 700 }}
                   onClick={() => setActiveTab('signin')}
                 >
-                  Already registered? Sign in
+                  {t('log.alreadyRegistered')}
                 </button>
               </div>
             </>
           )}
 
           <div style={{ marginTop: '32px', padding: '20px', background: 'rgba(37, 99, 235, 0.03)', borderRadius: '16px', border: '1px solid rgba(37, 99, 235, 0.08)' }}>
-            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>Access Information</div>
+            <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '12px' }}>{t('log.accessInfo')}</div>
             <p style={{ fontSize: '13px', color: 'var(--slate-dark)', lineHeight: 1.6, margin: 0 }}>
-              Observers self-register with @globalparadigmschools.com. HR uses a dedicated portal, and administrators control scope, reporting, and printing permissions.
+              {t('log.accessDesc')}
             </p>
           </div>
         </div>

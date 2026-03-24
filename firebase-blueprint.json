@@ -1,0 +1,124 @@
+{
+  "entities": {
+    "Teacher": {
+      "title": "Teacher",
+      "description": "A teacher in the system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "subject": { "type": "string" },
+        "role": { "type": "string" },
+        "division": { "type": "string" }
+      },
+      "required": ["id", "employeeId", "fullName", "subject", "role", "division"]
+    },
+    "Observer": {
+      "title": "Observer",
+      "description": "An observer or admin in the system",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "employeeId": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string" },
+        "hash": { "type": "string" },
+        "salt": { "type": "string" },
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "viewScopes": { "type": "array", "items": { "type": "string" } },
+            "allowedStages": { "type": "array", "items": { "type": "string" } },
+            "allowedSubjects": { "type": "array", "items": { "type": "string" } },
+            "canPrintReports": { "type": "boolean" },
+            "canViewReports": { "type": "boolean" }
+          }
+        }
+      },
+      "required": ["id", "employeeId", "name", "email", "username", "role", "hash", "salt"]
+    },
+    "Evaluation": {
+      "title": "Evaluation",
+      "description": "An evaluation record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tid": { "type": "string" },
+        "oid": { "type": "string" },
+        "date": { "type": "string" },
+        "type": { "type": "string" },
+        "scores": { "type": "object" },
+        "notes": { "type": "object" },
+        "draft": { "type": "boolean" }
+      },
+      "required": ["id", "tid", "oid", "date", "type", "scores", "notes", "draft"]
+    },
+    "Log": {
+      "title": "Log",
+      "description": "System audit log",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ts": { "type": "string" },
+        "uid": { "type": "string" },
+        "uname": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "ts", "uid", "uname", "action", "details", "type"]
+    },
+    "HRData": {
+      "title": "HRData",
+      "description": "HR attendance data for a teacher",
+      "type": "object",
+      "properties": {
+        "teacherId": { "type": "string" },
+        "absences": { "type": "number" },
+        "earlyLeaves": { "type": "number" },
+        "lateArrivals": { "type": "number" },
+        "notes": { "type": "string" }
+      },
+      "required": ["teacherId", "absences", "earlyLeaves", "lateArrivals"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "description": "Global settings",
+      "type": "object",
+      "properties": {
+        "customWeights": { "type": "object" },
+        "hrWeight": { "type": "number" },
+        "hrRubric": { "type": "object" }
+      }
+    }
+  },
+  "firestore": {
+    "teachers": {
+      "schema": { "$ref": "#/entities/Teacher" },
+      "description": "Collection of teachers"
+    },
+    "observers": {
+      "schema": { "$ref": "#/entities/Observer" },
+      "description": "Collection of observers/admins"
+    },
+    "evaluations": {
+      "schema": { "$ref": "#/entities/Evaluation" },
+      "description": "Collection of evaluations"
+    },
+    "logs": {
+      "schema": { "$ref": "#/entities/Log" },
+      "description": "Collection of audit logs"
+    },
+    "hrData": {
+      "schema": { "$ref": "#/entities/HRData" },
+      "description": "Collection of HR data"
+    },
+    "settings": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Global settings document"
+    }
+  }
+}

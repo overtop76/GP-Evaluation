@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Observer, UserRole, ObserverPermissions } from '../types';
 import { ini, hashPassword } from '../utils/helpers';
 import { SUBJECTS, DIVS } from '../constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface UserManagementProps {
   observers: Observer[];
@@ -12,6 +13,7 @@ interface UserManagementProps {
 }
 
 const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, onAddUser, onDeleteUser, onUpdateUser }) => {
+  const { t } = useLanguage();
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Observer | null>(null);
   const [newName, setNewName] = useState('');
@@ -69,23 +71,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
 
   const handleSave = async () => {
     if (!newName || !newEmail || !newEmployeeId || !newUsername || (!editingUser && !newPassword)) {
-      alert('Please complete all required fields.');
+      alert(t('user.alertComplete'));
       return;
     }
     if (!editingUser && observers.find(o => o.username === newUsername.toLowerCase())) {
-      alert('Username already exists.');
+      alert(t('user.alertUsername'));
       return;
     }
     
     // Check if email is unique
     if (observers.some(o => o.email === newEmail.toLowerCase() && o.id !== editingUser?.id)) {
-      alert('Email already exists.');
+      alert(t('user.alertEmail'));
       return;
     }
     
     // Check if employee ID is unique
     if (observers.some(o => o.employeeId === newEmployeeId && o.id !== editingUser?.id)) {
-      alert('Employee Number must be unique.');
+      alert(t('user.alertEmpId'));
       return;
     }
     
@@ -140,11 +142,11 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
     <div className="page">
       <div className="ph" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="ph-title">User Management</h1>
-          <p className="ph-sub">Manage observer and administrator accounts.</p>
+          <h1 className="ph-title">{t('user.title')}</h1>
+          <p className="ph-sub">{t('user.sub')}</p>
         </div>
         <button className="btn btn-primary" onClick={() => openModal()}>
-          <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> Add User
+          <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> {t('user.add')}
         </button>
       </div>
 
@@ -152,12 +154,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         <table className="gtable">
           <thead>
             <tr>
-              <th style={{ paddingLeft: '24px' }}>Name</th>
-              <th>Employee ID</th>
-              <th>Username</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th style={{ textAlign: 'right', paddingRight: '24px' }}>Actions</th>
+              <th style={{ paddingLeft: '24px' }}>{t('user.name')}</th>
+              <th>{t('user.empId')}</th>
+              <th>{t('user.username')}</th>
+              <th>{t('user.role')}</th>
+              <th>{t('user.status')}</th>
+              <th style={{ textAlign: 'right', paddingRight: '24px' }}>{t('user.actions')}</th>
             </tr>
           </thead>
           <tbody>
@@ -169,7 +171,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                     <div>
                       <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{o.name}</div>
                       <div style={{ fontSize: '11px', color: 'var(--slate)', fontWeight: 600 }}>
-                        {o.role === 'admin' ? 'Administrator' : o.role === 'hr' ? 'HR User' : 'Observer'}
+                        {t(`user.${o.role}`)}
                       </div>
                     </div>
                   </div>
@@ -187,28 +189,28 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                     color: o.role === 'admin' ? '#7c3aed' : o.role === 'hr' ? '#0284c7' : '#2563eb', 
                     borderColor: o.role === 'admin' ? '#e9d5ff' : o.role === 'hr' ? '#bae6fd' : '#bfdbfe' 
                   }}>
-                    {o.role}
+                    {t(`user.${o.role}`)}
                   </span>
                 </td>
                 <td>
                   <div className="frow" style={{ gap: '6px' }}>
                     <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981' }}></div>
-                    <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 600 }}>Active</span>
+                    <span style={{ fontSize: '12px', color: '#15803d', fontWeight: 600 }}>{t('user.active')}</span>
                   </div>
                 </td>
                 <td style={{ textAlign: 'right', paddingRight: '24px' }}>
-                  <button className="icon-btn" onClick={() => openModal(o)} title="Edit User">
+                  <button className="icon-btn" onClick={() => openModal(o)} title={t('user.editUser')}>
                     <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--blue)' }}>edit</span>
                   </button>
                   <button className="icon-btn" onClick={() => {
                     if (o.id === currentUser.id) {
-                      alert('You cannot delete your own account.');
+                      alert(t('user.alertOwnAccount'));
                       return;
                     }
-                    if (confirm(`Delete account for ${o.name}? They will lose all system access.`)) {
+                    if (confirm(t('user.confirmDelete').replace('{name}', o.name))) {
                       onDeleteUser(o.id);
                     }
-                  }} title="Delete User">
+                  }} title={t('user.deleteUser')}>
                     <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
                   </button>
                 </td>
@@ -222,20 +224,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="mbox" style={{ maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>
-              {editingUser ? 'Edit User' : 'Add New User'}
+              {editingUser ? t('user.editTitle') : t('user.addTitle')}
             </h2>
             <div className="g2">
               <div className="field">
-                <label className="flabel">Full Name</label>
+                <label className="flabel">{t('user.fullName')}</label>
                 <input className="finput" placeholder="e.g. Dr. John Smith" value={newName} onChange={e => setNewName(e.target.value)} />
               </div>
               <div className="field">
-                <label className="flabel">Employee Number</label>
+                <label className="flabel">{t('user.empId')}</label>
                 <input className="finput" placeholder="Unique ID" value={newEmployeeId} onChange={e => setNewEmployeeId(e.target.value)} />
               </div>
             </div>
             <div className="field">
-              <label className="flabel">School Email</label>
+              <label className="flabel">{t('user.email')}</label>
               <div style={{ position: 'relative' }}>
                 <span className="material-icons-outlined" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', color: '#10b981', fontSize: '18px' }}>email</span>
                 <input className="finput" placeholder="name@globalparadigmschools.com" value={newEmail} onChange={e => setNewEmail(e.target.value)} />
@@ -243,35 +245,35 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
             </div>
             <div className="g2">
               <div className="field">
-                <label className="flabel">Username</label>
+                <label className="flabel">{t('user.username')}</label>
                 <input className="finput" placeholder="e.g. jsmith" value={newUsername} onChange={e => setNewUsername(e.target.value)} disabled={!!editingUser} />
               </div>
               <div className="field">
-                <label className="flabel">Password {editingUser && '(Leave blank to keep current)'}</label>
+                <label className="flabel">{editingUser ? t('user.passwordEdit') : t('user.password')}</label>
                 <input className="finput" type="password" placeholder="Min. 8 characters" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
               </div>
             </div>
             <div className="field">
-              <label className="flabel">System Role</label>
+              <label className="flabel">{t('user.role')}</label>
               <div className="frow" style={{ gap: '12px' }}>
                 <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', background: 'var(--bg)', border: `2px solid ${newRole === 'observer' ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
                   <input type="radio" name="of-role" value="observer" checked={newRole === 'observer'} onChange={() => setNewRole('observer')} style={{ accentColor: 'var(--blue)', width: '16px', height: '16px' }} />
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>Observer</div>
+                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{t('user.observer')}</div>
                     <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Scoped access</div>
                   </div>
                 </label>
                 <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', background: 'var(--bg)', border: `2px solid ${newRole === 'admin' ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
                   <input type="radio" name="of-role" value="admin" checked={newRole === 'admin'} onChange={() => setNewRole('admin')} style={{ accentColor: 'var(--blue)', width: '16px', height: '16px' }} />
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>Administrator</div>
+                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{t('user.admin')}</div>
                     <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Full system control</div>
                   </div>
                 </label>
                 <label style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '10px', padding: '14px', background: 'var(--bg)', border: `2px solid ${newRole === 'hr' ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
                   <input type="radio" name="of-role" value="hr" checked={newRole === 'hr'} onChange={() => setNewRole('hr')} style={{ accentColor: 'var(--blue)', width: '16px', height: '16px' }} />
                   <div>
-                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>HR User</div>
+                    <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{t('user.hr')}</div>
                     <div style={{ fontSize: '11px', color: 'var(--slate)' }}>Attendance only</div>
                   </div>
                 </label>
@@ -280,34 +282,34 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
             
             {newRole === 'admin' && (
               <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(37, 99, 235, 0.05)', borderRadius: '12px', border: '1px solid rgba(37, 99, 235, 0.1)' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>Administrator Access</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>{t('user.adminAccess')}</h3>
                 <p style={{ fontSize: '12px', color: 'var(--slate)', lineHeight: 1.5 }}>
-                  Administrators automatically receive full access to observations, reports, printing, rubric settings, user management, audit logs, and HR attendance controls.
+                  {t('user.adminDesc')}
                 </p>
               </div>
             )}
 
             {newRole === 'hr' && (
               <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(14, 165, 233, 0.05)', borderRadius: '12px', border: '1px solid rgba(14, 165, 233, 0.1)' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>HR Access</h3>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--navy)', marginBottom: '8px' }}>{t('user.hrAccess')}</h3>
                 <p style={{ fontSize: '12px', color: 'var(--slate)', lineHeight: 1.5 }}>
-                  HR users can only open the HR Attendance page and enter attendance, late arrival, and early leave data. They cannot view evaluations, reports, dashboards, or user administration.
+                  {t('user.hrDesc')}
                 </p>
               </div>
             )}
             
             {newRole === 'observer' && (
               <div style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid var(--border)' }}>
-                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>Observer Permissions</h3>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--navy)', marginBottom: '16px' }}>{t('user.observerPerms')}</h3>
                 
                 <div className="field">
-                  <label className="flabel">View Scopes (Select one or more)</label>
+                  <label className="flabel">{t('user.viewScopesLabel')}</label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginTop: '8px' }}>
                     {[
-                      { id: 'all', label: 'All Observations' },
-                      { id: 'own', label: 'Only Own Observations' },
-                      { id: 'stage', label: 'Specific Stages' },
-                      { id: 'subject', label: 'Specific Subjects' }
+                      { id: 'all', label: t('user.scopeAllObs') },
+                      { id: 'own', label: t('user.scopeOwnObs') },
+                      { id: 'stage', label: t('user.scopeSpecificStages') },
+                      { id: 'subject', label: t('user.scopeSpecificSubjects') }
                     ].map(scope => (
                       <label key={scope.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg)', border: `1px solid ${viewScopes.includes(scope.id as any) ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
                         <input 
@@ -333,7 +335,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 
                 {viewScopes.includes('stage') && (
                   <div className="field">
-                    <label className="flabel">Allowed Stages</label>
+                    <label className="flabel">{t('user.allowedStages')}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {DIVS.map(div => (
                         <label key={div} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
@@ -354,7 +356,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 
                 {viewScopes.includes('subject') && (
                   <div className="field">
-                    <label className="flabel">Allowed Subjects</label>
+                    <label className="flabel">{t('user.allowedSubjects')}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                       {SUBJECTS.map(sub => (
                         <label key={sub} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
@@ -376,20 +378,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                 <div className="g2">
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={canViewReports} onChange={e => setCanViewReports(e.target.checked)} />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>Can View Reports</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>{t('user.canViewReports')}</span>
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
                     <input type="checkbox" checked={canPrintReports} onChange={e => setCanPrintReports(e.target.checked)} />
-                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>Can Print Reports</span>
+                    <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--navy)' }}>{t('user.canPrintReports')}</span>
                   </label>
                 </div>
               </div>
             )}
             
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '24px' }}>
-              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
+              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>{t('user.cancel')}</button>
               <button className="btn btn-primary" onClick={handleSave}>
-                <span className="material-icons" style={{ fontSize: '16px' }}>check</span> {editingUser ? 'Save Changes' : 'Create Account'}
+                <span className="material-icons" style={{ fontSize: '16px' }}>check</span> {editingUser ? t('user.saveChanges') : t('user.createAccount')}
               </button>
             </div>
           </div>

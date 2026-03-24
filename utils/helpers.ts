@@ -30,10 +30,10 @@ export const getRubric = (type: string, customWeights?: Record<string, number[]>
 };
 
 export const getRating = (s: number) => {
-  if (s >= 3.5) return { label: 'Exemplary', css: 'b-ex', color: '#15803d', hex: 'rgba(16, 185, 129, 0.1)' };
-  if (s >= 2.75) return { label: 'Proficient', css: 'b-pr', color: '#1d4ed8', hex: 'rgba(59, 130, 246, 0.1)' };
-  if (s >= 2.0) return { label: 'Developing', css: 'b-dev', color: '#b45309', hex: 'rgba(245, 158, 11, 0.1)' };
-  return { label: 'Unsatisfactory', css: 'b-uns', color: '#dc2626', hex: 'rgba(239, 68, 68, 0.1)' };
+  if (s >= 3.5) return { label: 'Exemplary', level: 4, css: 'b-ex', color: '#15803d', hex: 'rgba(16, 185, 129, 0.1)' };
+  if (s >= 2.75) return { label: 'Proficient', level: 3, css: 'b-pr', color: '#1d4ed8', hex: 'rgba(59, 130, 246, 0.1)' };
+  if (s >= 2.0) return { label: 'Developing', level: 2, css: 'b-dev', color: '#b45309', hex: 'rgba(245, 158, 11, 0.1)' };
+  return { label: 'Unsatisfactory', level: 1, css: 'b-uns', color: '#dc2626', hex: 'rgba(239, 68, 68, 0.1)' };
 };
 
 export const countInds = (type: string): number => {

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Log } from '../types';
 import { fmtDT } from '../utils/helpers';
+import { useLanguage } from '../context/LanguageContext';
 
 interface AuditLogProps {
   logs: Log[];
@@ -16,6 +17,7 @@ const TB: Record<string, string> = {
 };
 
 const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
+  const { t } = useLanguage();
   const [filter, setFilter] = useState('');
 
   const filteredLogs = React.useMemo(() => logs
@@ -31,12 +33,12 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
     <div className="page">
       <div className="ph" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <h1 className="ph-title">Audit Log</h1>
-          <p className="ph-sub">Immutable record of all system activity — latest 200 events.</p>
+          <h1 className="ph-title">{t('audit.title')}</h1>
+          <p className="ph-sub">{t('audit.sub')}</p>
         </div>
         <div className="frow" style={{ gap: '8px', background: 'rgba(16, 185, 129, 0.1)', border: '1px solid #bbf7d0', borderRadius: '20px', padding: '6px 12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
           <span className="material-icons-outlined" style={{ color: '#15803d', fontSize: '18px' }}>verified_user</span>
-          <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#15803d' }}>Immutable Log</span>
+          <span style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: '#15803d' }}>{t('audit.immutable')}</span>
         </div>
       </div>
 
@@ -46,7 +48,7 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
             <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate)', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input 
               className="finput" 
-              placeholder="Filter by user, action, or details…" 
+              placeholder={t('audit.search')} 
               style={{ paddingLeft: '42px', fontSize: '14px' }} 
               value={filter}
               onChange={e => setFilter(e.target.value)}
@@ -54,7 +56,7 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
           </div>
           {filter && (
             <button className="btn btn-ghost btn-sm" onClick={() => setFilter('')}>
-              Clear
+              {t('audit.clear')}
             </button>
           )}
         </div>
@@ -62,11 +64,11 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
           <table className="gtable">
             <thead>
               <tr>
-                <th style={{ paddingLeft: '24px' }}>Timestamp</th>
-                <th>Operator</th>
-                <th>Action</th>
-                <th>Details</th>
-                <th style={{ paddingRight: '24px' }}>Type</th>
+                <th style={{ paddingLeft: '24px' }}>{t('audit.timestamp')}</th>
+                <th>{t('audit.operator')}</th>
+                <th>{t('audit.action')}</th>
+                <th>{t('audit.details')}</th>
+                <th style={{ paddingRight: '24px' }}>{t('audit.type')}</th>
               </tr>
             </thead>
             <tbody>
@@ -75,7 +77,7 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
                 return (
                   <tr key={l.id}>
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: 'var(--slate)', whiteSpace: 'nowrap', paddingLeft: '24px' }}>{fmtDT(l.ts)}</td>
-                    <td style={{ fontWeight: 600, color: 'var(--navy)' }}>{l.uname || 'System'}</td>
+                    <td style={{ fontWeight: 600, color: 'var(--navy)' }}>{l.uname || t('audit.system')}</td>
                     <td style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '12px', color: '#2563eb' }}>{l.action}</td>
                     <td style={{ color: 'var(--slate-dark)', fontSize: '13.5px' }}>{l.details}</td>
                     <td style={{ paddingRight: '24px' }}>
@@ -90,7 +92,7 @@ const AuditLog: React.FC<AuditLogProps> = ({ logs }) => {
                   <td colSpan={5}>
                     <div className="empty" style={{ padding: '48px 24px' }}>
                       <span className="material-icons mi" style={{ fontSize: '40px', color: 'var(--border-hover)' }}>receipt_long</span>
-                      <p style={{ fontSize: '14px' }}>No audit events found.</p>
+                      <p style={{ fontSize: '14px' }}>{t('audit.noEvents')}</p>
                     </div>
                   </td>
                 </tr>

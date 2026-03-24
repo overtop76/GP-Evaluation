@@ -3,6 +3,7 @@ import { Teacher, Observer, Evaluation, AppState } from '../types';
 import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
+import { useLanguage } from '../context/LanguageContext';
 
 const CHART_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6'];
 
@@ -14,6 +15,7 @@ interface ReportProps {
 }
 
 const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
+  const { t } = useLanguage();
   const [currentType, setCurrentType] = React.useState(type);
   const [startDate, setStartDate] = React.useState('');
   const [endDate, setEndDate] = React.useState('');
@@ -43,15 +45,15 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         <div className="ph" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
           <div>
             <button className="btn btn-ghost btn-sm no-print" style={{ marginBottom: '12px' }} onClick={onBack}>
-              <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> Back
+              <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> {t('action.back')}
             </button>
             <h1 className="ph-title">{teacher.fullName}</h1>
             <p className="ph-sub">{teacher.role} · {teacher.subject} · {teacher.division}</p>
           </div>
           <div className="frow" style={{ gap: '12px' }}>
             <div className="tbar no-print">
-              {Object.keys(TYPE_LABELS).map(t => (
-                <button key={t} className={`tbtn ${currentType === t ? 'active' : ''}`} onClick={() => setCurrentType(t)}>{TYPE_LABELS[t]}</button>
+              {Object.keys(TYPE_LABELS).map(tKey => (
+                <button key={tKey} className={`tbtn ${currentType === tKey ? 'active' : ''}`} onClick={() => setCurrentType(tKey)}>{t(`type.${tKey}`) || TYPE_LABELS[tKey]}</button>
               ))}
             </div>
           </div>
@@ -68,14 +70,14 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <div>
                 <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '36px', fontWeight: 900, color: '#fff', letterSpacing: '.02em', lineHeight: 1 }}>{teacher.fullName}</div>
                 <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'rgba(255,255,255,.6)', marginTop: '6px' }}>
-                  Employee ID: {teacher.employeeId || 'N/A'} · Performance Evaluation Report · Global Paradigm International School
+                  {t('dir.empId')}: {teacher.employeeId || 'N/A'} · {t('rep.perfReport')} · Global Paradigm International School
                 </div>
               </div>
             </div>
           </div>
           <div className="empty" style={{ padding: '80px' }}>
             <span className="material-icons mi">search_off</span>
-            <p>No <strong>{TYPE_LABELS[currentType]}</strong> evaluations for this teacher.</p>
+            <p>{t('rep.noEvals').replace('{type}', t(`type.${currentType}`) || TYPE_LABELS[currentType])}</p>
           </div>
         </div>
       </div>
@@ -112,12 +114,12 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
   const latestScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric), 0) / finals.length : 0;
   const avgScore = latestScore; // In this view, they are the same as we average everything in scope
-  const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9' };
+  const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9', level: 0 };
   const rubric = getRubric(currentType, state.customWeights);
   
   const isCollective = !observerFilter;
   const observer = state.observers.find(o => o.id === observerFilter);
-  const reportTitle = isCollective ? "Collective Performance Evaluation Report" : `Observer Evaluation Report: ${observer?.name || 'Unknown'}`;
+  const reportTitle = isCollective ? t('rep.collectiveReport') : `${t('rep.observerReport')}: ${observer?.name || t('rep.unknown')}`;
 
   // Prepare data for the comparison chart
   const observerIds = Array.from(new Set(finals.map(f => f.oid)));
@@ -211,20 +213,20 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
       <div className="ph" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <button className="btn btn-ghost btn-sm no-print" style={{ marginBottom: '12px' }} onClick={onBack}>
-            <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> Back
+            <span className="material-icons" style={{ fontSize: '15px' }}>arrow_back</span> {t('action.back')}
           </button>
           <h1 className="ph-title">{teacher.fullName}</h1>
           <p className="ph-sub">{teacher.role} · {teacher.subject} · {teacher.division}</p>
         </div>
         <div className="frow" style={{ gap: '12px' }}>
           <div className="tbar no-print">
-            {Object.keys(TYPE_LABELS).map(t => (
-              <button key={t} className={`tbtn ${currentType === t ? 'active' : ''}`} onClick={() => setCurrentType(t)}>{TYPE_LABELS[t]}</button>
+            {Object.keys(TYPE_LABELS).map(tKey => (
+              <button key={tKey} className={`tbtn ${currentType === tKey ? 'active' : ''}`} onClick={() => setCurrentType(tKey)}>{t(`type.${tKey}`) || TYPE_LABELS[tKey]}</button>
             ))}
           </div>
           {(!state.currentUser?.permissions || state.currentUser.permissions.canPrintReports) && (
             <button className="btn btn-dark no-print" onClick={() => window.print()}>
-              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>print</span> Print Report
+              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>print</span> {t('action.print')}
             </button>
           )}
         </div>
@@ -235,25 +237,25 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
           <div style={{ width: '32px', height: '32px', background: 'var(--bg)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--slate)' }}>
             <span className="material-icons-outlined" style={{ fontSize: '18px' }}>filter_alt</span>
           </div>
-          <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--slate)' }}>Filters</span>
+          <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', color: 'var(--slate)' }}>{t('rep.filterDates')}</span>
         </div>
         <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '160px' }}>
-          <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={startDate} onChange={e => setStartDate(e.target.value)} placeholder="Start Date" />
+          <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={startDate} onChange={e => setStartDate(e.target.value)} />
         </div>
         <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '160px' }}>
-          <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={endDate} onChange={e => setEndDate(e.target.value)} placeholder="End Date" />
+          <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={endDate} onChange={e => setEndDate(e.target.value)} />
         </div>
         {(!state.currentUser?.permissions || !state.currentUser.permissions.viewScopes.includes('own')) && (
           <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '200px' }}>
             <select className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={observerFilter} onChange={e => setObserverFilter(e.target.value)}>
-              <option value="">All Observers</option>
+              <option value="">{t('rep.allObservers')}</option>
               {state.observers.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
             </select>
           </div>
         )}
         {(startDate || endDate || observerFilter) && (
           <button className="btn btn-ghost btn-sm" onClick={() => { setStartDate(''); setEndDate(''); setObserverFilter(''); }}>
-            Clear
+            {t('action.cancel')}
           </button>
         )}
       </div>
@@ -273,7 +275,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 {reportTitle} · Global Paradigm International School
               </div>
               <div style={{ fontSize: '11px', fontWeight: 600, color: 'rgba(255,255,255,.4)', marginTop: '4px' }}>
-                Employee ID: {teacher.employeeId || 'N/A'} · {teacher.role} · {teacher.subject} · {teacher.division}
+                {t('dir.empId')}: {teacher.employeeId || 'N/A'} · {teacher.role} · {teacher.subject} · {teacher.division}
               </div>
             </div>
           </div>
@@ -282,22 +284,22 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         {finals.length === 0 ? (
           <div className="empty" style={{ padding: '80px' }}>
             <span className="material-icons mi">filter_list_off</span>
-            <p>No records match the selected filters.</p>
-            <button className="btn btn-ghost btn-sm" style={{ marginTop: '16px' }} onClick={() => { setStartDate(''); setEndDate(''); setObserverFilter(''); }}>Clear Filters</button>
+            <p>{t('rep.noEvals').replace('{type}', t(`type.${currentType}`) || TYPE_LABELS[currentType])}</p>
+            <button className="btn btn-ghost btn-sm" style={{ marginTop: '16px' }} onClick={() => { setStartDate(''); setEndDate(''); setObserverFilter(''); }}>{t('action.cancel')}</button>
           </div>
         ) : (
           <>
             <div className="rep-meta">
-              <div className="rmc"><div className="rmc-l">Framework</div><div className="rmc-v">{TYPE_LABELS[currentType]}</div></div>
-              <div className="rmc"><div className="rmc-l">Latest Date</div><div className="rmc-v">{latest ? fmtD(latest.date) : '—'}</div></div>
-              <div className="rmc"><div className="rmc-l">Total Evaluations</div><div className="rmc-v">{finals.length} completed</div></div>
-              <div className="rmc"><div className="rmc-l">Period Average</div><div className="rmc-v" style={{ color: r.color }}>{avgScore.toFixed(2)}</div></div>
-              <div className="rmc"><div className="rmc-l">HR Weight</div><div className="rmc-v">{state.hrWeight}%</div></div>
+              <div className="rmc"><div className="rmc-l">{t('eval.evalType')}</div><div className="rmc-v">{t(`type.${currentType}`) || TYPE_LABELS[currentType]}</div></div>
+              <div className="rmc"><div className="rmc-l">{t('eval.date')}</div><div className="rmc-v">{latest ? fmtD(latest.date) : '—'}</div></div>
+              <div className="rmc"><div className="rmc-l">{t('rep.perfReport')}</div><div className="rmc-v">{finals.length} {t('eval.complete')}</div></div>
+              <div className="rmc"><div className="rmc-l">{t('rep.overallScore')}</div><div className="rmc-v" style={{ color: r.color }}>{avgScore.toFixed(2)}</div></div>
+              <div className="rmc"><div className="rmc-l">{t('set.hrWeight')}</div><div className="rmc-v">{state.hrWeight}%</div></div>
             </div>
 
             <div style={{ padding: '32px' }}>
               <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>
-                {isCollective ? 'Observer Comparison by Domain' : 'Domain Performance Profile'}
+                {isCollective ? t('rep.obsComparison') : t('rep.domainProfile')}
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: isCollective && observersInReport.length > 1 ? '1fr' : '1fr 1fr', gap: '32px', alignItems: 'start' }}>
                 <div style={{ height: Math.max(350, ds.length * 45), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
@@ -325,20 +327,24 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 </div>
                 
                 <div style={{ background: 'var(--bg)', padding: '24px', borderRadius: '16px', border: '1px solid var(--border)' }}>
-                  <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>Executive Summary</h3>
+                  <h3 style={{ fontSize: '14px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--slate)', marginBottom: '12px' }}>{t('rep.execSummary')}</h3>
                   <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--slate-darker)' }}>
-                    This report summarizes the performance of <strong>{teacher.fullName}</strong> for the <strong>{TYPE_LABELS[currentType]}</strong> framework. 
-                    Based on <strong>{finals.length}</strong> evaluations, the overall score is <strong>{latestScore.toFixed(2)}</strong>, placing the teacher in the <strong>{r.label}</strong> category.
-                    {isCollective ? ' This collective view represents a consensus across multiple observers.' : ' This report reflects the specific observations of the selected evaluator.'}
+                    {t('rep.summaryText')
+                      .replace('{name}', teacher.fullName)
+                      .replace('{type}', t(`type.${currentType}`) || TYPE_LABELS[currentType])
+                      .replace('{count}', finals.length.toString())
+                      .replace('{score}', latestScore.toFixed(2))
+                      .replace('{label}', t(`lvl.${r.level}`) || r.label)}
+                    {isCollective ? ` ${t('rep.collectiveNote')}` : ` ${t('rep.individualNote')}`}
                   </p>
                   <div style={{ marginTop: '16px', display: 'flex', gap: '12px' }}>
                      <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Avg Score</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>{t('rep.avgScore')}</div>
                         <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--navy)' }}>{avgScore.toFixed(2)}</div>
                      </div>
                      <div style={{ flex: 1, padding: '12px', background: '#fff', borderRadius: '8px', border: '1px solid var(--border)', textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>Rating</div>
-                        <div style={{ fontSize: '16px', fontWeight: 900, color: r.color }}>{r.label}</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase' }}>{t('rep.rating')}</div>
+                        <div style={{ fontSize: '16px', fontWeight: 900, color: r.color }}>{t(`lvl.${r.level}`) || r.label}</div>
                      </div>
                   </div>
                 </div>
@@ -347,7 +353,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
             <div style={{ padding: '32px', display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '32px', alignItems: 'start' }} className="page-break">
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>Performance by Domain (Detailed)</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>{t('rep.perfByDomain')}</h2>
                 <div style={{ height: Math.max(240, ds.length * 50 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart layout="vertical" data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -368,11 +374,11 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 </div>
               </div>
               <div>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Overall Rating</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.overallRating')}</h2>
                 <div style={{ background: r.hex, border: `1px solid ${r.color}30`, borderRadius: '20px', padding: '32px', textAlign: 'center', borderTop: `6px solid ${r.color}`, boxShadow: 'var(--sh)' }}>
                   <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '80px', fontWeight: 900, color: r.color, lineHeight: 1 }}>{latestScore.toFixed(2)}</div>
-                  <span className={`badge ${r.css}`} style={{ fontSize: '13px', padding: '6px 18px', marginTop: '12px' }}>{r.label}</span>
-                  <div style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '16px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{TYPE_LABELS[currentType]}</div>
+                  <span className={`badge ${r.css}`} style={{ fontSize: '13px', padding: '6px 18px', marginTop: '12px' }}>{t(`lvl.${r.level}`) || r.label}</span>
+                  <div style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '16px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t(`type.${currentType}`) || TYPE_LABELS[currentType]}</div>
                 </div>
               </div>
             </div>
@@ -381,10 +387,10 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               <div style={{ padding: '0 32px 32px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>
-                    Detailed Breakdown: {selectedDomainData.domain}
+                    {t('rep.detailedBreakdown')}: {selectedDomainData.domain}
                   </h2>
                   <button className="btn btn-ghost btn-sm" onClick={() => setSelectedDomain(null)}>
-                    <span className="material-icons" style={{ fontSize: '16px' }}>close</span> Close Details
+                    <span className="material-icons" style={{ fontSize: '16px' }}>close</span> {t('rep.closeDetails')}
                   </button>
                 </div>
                 <div className="card" style={{ padding: '24px' }}>
@@ -408,7 +414,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                               </div>
                               {nm[ind.id] && (
                                 <div style={{ marginTop: '4px', padding: '8px 12px', background: 'var(--white)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '13px', color: 'var(--slate)', fontStyle: 'italic' }}>
-                                  <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--slate)', marginRight: '6px' }}>Notes:</strong>
+                                  <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--slate)', marginRight: '6px' }}>{t('eval.notes')}:</strong>
                                   {nm[ind.id]}
                                 </div>
                               )}
@@ -423,27 +429,27 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             )}
 
             <div style={{ padding: '0 32px 32px' }} className="page-break">
-              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Domain Breakdown</h2>
+              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.domainBreakdown')}</h2>
               <div className="card" style={{ overflow: 'hidden' }}>
                 <table className="gtable">
                   <thead>
                     <tr>
-                      <th style={{ paddingLeft: '24px' }}>Domain</th>
-                      <th className="tc">Weight</th>
-                      <th className="tc">Average</th>
-                      <th className="tc">Rating</th>
-                      <th className="tc" style={{ paddingRight: '24px' }}>Weighted Contribution</th>
+                      <th style={{ paddingLeft: '24px' }}>{t('rep.domainBreakdown').split(' ')[0] || 'Domain'}</th>
+                      <th className="tc">{t('eval.weight')}</th>
+                      <th className="tc">{t('rep.avgScore')}</th>
+                      <th className="tc">{t('rep.rating')}</th>
+                      <th className="tc" style={{ paddingRight: '24px' }}>{t('rep.weightedContribution')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {ds.map(d => {
-                      const dr = d.avg ? getRating(d.avg) : { label: 'Not Scored', css: '', color: 'var(--slate)' };
+                      const dr = d.avg ? getRating(d.avg) : { label: t('rep.notScored'), css: '', color: 'var(--slate)', level: 0 };
                       return (
                         <tr key={d.name}>
                           <td style={{ fontWeight: 600, color: 'var(--navy)', paddingLeft: '24px' }}>{d.name}</td>
                           <td className="tc">{d.weight}%</td>
                           <td className="tc"><span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: dr.color }}>{d.avg ? d.avg.toFixed(2) : '—'}</span></td>
-                          <td className="tc"><span className={`badge ${dr.css}`}>{dr.label}</span></td>
+                          <td className="tc"><span className={`badge ${dr.css}`}>{t(`lvl.${dr.level}`) || dr.label}</span></td>
                           <td className="tc" style={{ fontFamily: '"JetBrains Mono", monospace', fontSize: '13px', color: 'var(--slate)', paddingRight: '24px' }}>{d.avg && d.weight ? (d.avg * d.weight / 100).toFixed(3) : '—'}</td>
                         </tr>
                       );
@@ -455,15 +461,15 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
             {teacherHRData && (
               <div style={{ padding: '0 32px 32px' }} className="page-break">
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>HR Attendance & Punctuality Analysis</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.hrTitle')}</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="card" style={{ padding: '24px' }}>
                     <div style={{ height: '200px' }}>
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={[
-                          { name: 'Absences', value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },
-                          { name: 'Early Leaves', value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) },
-                          { name: 'Late Arrivals', value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) }
+                          { name: t('set.absences'), value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },
+                          { name: t('set.earlyLeaves'), value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) },
+                          { name: t('set.lateArrivals'), value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) }
                         ]}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
@@ -478,7 +484,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                     <div className="frow" style={{ justifyContent: 'center', gap: '20px', marginTop: '16px' }}>
                       <div className="flex items-center gap-2">
                         <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
-                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Metric Count</span>
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('rep.metricCount')}</span>
                       </div>
                     </div>
                   </div>
@@ -486,25 +492,25 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div className="grid grid-cols-3 gap-4">
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Absences</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.absences')}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubric.absences) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('absences', teacherHRData.absences, hrRubric.absences)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubric.absences) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('absences', teacherHRData.absences, hrRubric.absences)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Early Leaves</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.earlyLeaves')}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>Late Arrivals</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.lateArrivals')}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>Score: {getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals)}</div>
                       </div>
                     </div>
                     
                     {teacherHRData.notes && (
                       <div style={{ marginTop: '20px', background: 'var(--bg)', padding: '12px', borderRadius: '12px', border: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>HR Observations</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('rep.hrObservations')}</div>
                         <div style={{ fontSize: '13px', color: 'var(--slate-darker)', fontStyle: 'italic' }}>"{teacherHRData.notes}"</div>
                       </div>
                     )}
@@ -516,7 +522,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             <div style={{ padding: '0 32px 32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }} className="page-break">
               <div>
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#15803d', marginBottom: '16px' }}>
-                  {isCollective ? 'Common Strengths' : 'Identified Strengths'} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span>
+                  {isCollective ? t('rep.commonStrengths') : t('rep.identifiedStrengths')} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(3–4)</span>
                 </h2>
                 {strengths.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -530,11 +536,11 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       </div>
                     ))}
                   </div>
-                ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>No indicators scored 3 or above.</div>}
+                ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>{t('rep.noStrengths')}</div>}
               </div>
               <div>
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: '#dc2626', marginBottom: '16px' }}>
-                  {isCollective ? 'Common Areas for Development' : 'Areas for Development'} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(1–2)</span>
+                  {isCollective ? t('rep.commonAreas') : t('rep.areasForDev')} <span style={{ fontSize: '16px', fontWeight: 700, color: 'var(--slate)' }}>(1–2)</span>
                 </h2>
                 {imps.length ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -548,27 +554,27 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       </div>
                     ))}
                   </div>
-                ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>No indicators scored below 3.</div>}
+                ) : <div style={{ color: 'var(--slate)', fontStyle: 'italic', fontSize: '14px' }}>{t('rep.noAreas')}</div>}
               </div>
             </div>
 
             {latest && latest.comments && (
               <div style={{ padding: '0 32px 32px' }}>
-                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Evaluator Synthesis</h2>
+                <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.evalSynthesis')}</h2>
                 <div className="card" style={{ padding: '24px', fontSize: '15px', lineHeight: 1.7, color: 'var(--slate)', background: 'var(--bg)', border: '1px solid var(--border)' }}>{latest.comments}</div>
               </div>
             )}
 
             <div style={{ padding: '0 32px 32px' }}>
-              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>Evaluation History</h2>
+              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.evalHistory')}</h2>
               <div className="card" style={{ overflow: 'hidden' }}>
                 <table className="gtable">
                   <thead>
                     <tr>
-                      <th style={{ paddingLeft: '24px' }}>Date</th>
-                      <th>Score</th>
-                      <th>Rating</th>
-                      <th style={{ paddingRight: '24px' }}>Observer</th>
+                      <th style={{ paddingLeft: '24px' }}>{t('eval.date')}</th>
+                      <th>{t('rep.score')}</th>
+                      <th>{t('rep.rating')}</th>
+                      <th style={{ paddingRight: '24px' }}>{t('eval.observer')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -581,7 +587,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                         <tr key={ev.id}>
                           <td style={{ fontWeight: 600, color: 'var(--slate)', paddingLeft: '24px' }}>{fmtD(ev.date)}</td>
                           <td><span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 900, color: rr.color }}>{s.toFixed(2)}</span></td>
-                          <td><span className={`badge ${rr.css}`}>{rr.label}</span></td>
+                          <td><span className={`badge ${rr.css}`}>{t(`lvl.${rr.level}`) || rr.label}</span></td>
                           <td style={{ color: 'var(--slate)', fontSize: '13px', paddingRight: '24px' }}>{obs?.name || '—'}</td>
                         </tr>
                       );
@@ -594,14 +600,14 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             <div style={{ padding: '0 32px 40px' }}>
               <div style={{ border: '1px solid var(--border)', borderRadius: '16px', padding: '32px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', background: 'var(--white)' }}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--slate)', marginBottom: '8px' }}>Evaluator Signature</div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--slate)', marginBottom: '8px' }}>{t('rep.evalSignature')}</div>
                   <div style={{ borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '8px', height: '40px' }}></div>
                   <div style={{ fontSize: '13px', color: 'var(--slate)' }}>{latest ? fmtD(latest.date) : '—'}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--slate)', marginBottom: '8px' }}>Teacher Signature</div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.12em', color: 'var(--slate)', marginBottom: '8px' }}>{t('rep.teacherSignature')}</div>
                   <div style={{ borderBottom: '2px solid var(--border)', paddingBottom: '8px', marginBottom: '8px', height: '40px' }}></div>
-                  <div style={{ fontSize: '13px', color: 'var(--slate)' }}>Date</div>
+                  <div style={{ fontSize: '13px', color: 'var(--slate)' }}>{t('eval.date')}</div>
                 </div>
               </div>
             </div>

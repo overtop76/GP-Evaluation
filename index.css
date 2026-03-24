@@ -50,6 +50,273 @@
   border-color: var(--slate-darker);
 }
 
+[dir="rtl"] {
+  font-family: 'Cairo', 'Inter', system-ui, sans-serif;
+}
+
+[dir="rtl"] .sb-nav .nav-btn .mi {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .btn .material-icons,
+[dir="rtl"] .btn .material-icons-outlined {
+  margin-right: 0;
+  margin-left: 6px;
+}
+
+[dir="rtl"] .frow {
+  flex-direction: row;
+}
+
+[dir="rtl"] .gtable th,
+[dir="rtl"] .gtable td {
+  text-align: right;
+}
+
+[dir="rtl"] .gtable th.tc,
+[dir="rtl"] .gtable td.tc {
+  text-align: center;
+}
+
+[dir="rtl"] .gtable th:first-child,
+[dir="rtl"] .gtable td:first-child {
+  padding-left: 16px;
+  padding-right: 24px;
+}
+
+[dir="rtl"] .gtable th:last-child,
+[dir="rtl"] .gtable td:last-child {
+  padding-right: 16px;
+  padding-left: 24px;
+}
+
+[dir="rtl"] .mlbl {
+  text-align: right;
+}
+
+[dir="rtl"] .mval {
+  text-align: right;
+}
+
+[dir="rtl"] .msub {
+  text-align: right;
+}
+
+[dir="rtl"] .ph-title,
+[dir="rtl"] .ph-sub {
+  text-align: right;
+}
+
+[dir="rtl"] .flabel {
+  text-align: right;
+}
+
+[dir="rtl"] .finput {
+  text-align: right;
+}
+
+[dir="rtl"] .dtab {
+  text-align: right;
+}
+
+[dir="rtl"] .rmc-l {
+  text-align: right;
+}
+
+[dir="rtl"] .rmc-v {
+  text-align: right;
+}
+
+[dir="rtl"] .ind-id {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .ind-ev {
+  margin-left: 0;
+  margin-right: 12px;
+}
+
+[dir="rtl"] .dom-meta {
+  margin-left: 0;
+  margin-right: 12px;
+}
+
+[dir="rtl"] .slbl {
+  margin-left: 0;
+  margin-right: 8px;
+}
+
+[dir="rtl"] .sb-user {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-uname,
+[dir="rtl"] .sb-urole {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-av {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .sb-foot {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-sec {
+  text-align: right;
+}
+
+[dir="rtl"] .nav-btn {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-title,
+[dir="rtl"] .sb-ver {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-logo {
+  text-align: right;
+}
+
+[dir="rtl"] .sb-logo > div:first-child {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .lhead,
+[dir="rtl"] .ltitle,
+[dir="rtl"] .lsub {
+  text-align: right;
+}
+
+[dir="rtl"] .lbody {
+  text-align: right;
+}
+
+[dir="rtl"] .login-card {
+  text-align: right;
+}
+
+[dir="rtl"] .page {
+  text-align: right;
+}
+
+[dir="rtl"] .card,
+[dir="rtl"] .card-xl {
+  text-align: right;
+}
+
+[dir="rtl"] .mbox {
+  text-align: right;
+}
+
+[dir="rtl"] .mhead {
+  text-align: right;
+}
+
+[dir="rtl"] .mbody {
+  text-align: right;
+}
+
+[dir="rtl"] .mfoot {
+  text-align: right;
+}
+
+[dir="rtl"] .toast {
+  text-align: right;
+}
+
+[dir="rtl"] .empty {
+  text-align: right;
+}
+
+[dir="rtl"] .badge {
+  text-align: right;
+}
+
+[dir="rtl"] .pbar {
+  text-align: right;
+}
+
+[dir="rtl"] .pfill {
+  text-align: right;
+}
+
+[dir="rtl"] .av {
+  margin-right: 0;
+  margin-left: 12px;
+}
+
+[dir="rtl"] .icon-btn {
+  margin-right: 0;
+  margin-left: 8px;
+}
+
+[dir="rtl"] .btn-ghost {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-primary {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-danger {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-dark {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-sm {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-lg {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-block {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-outline {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-icon {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-circle {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-square {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-link {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-active {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-disabled {
+  text-align: right;
+}
+
+[dir="rtl"] .btn-loading {
+  text-align: right;
+}
+
 .dark .ph-title {
   color: #f8fafc;
 }

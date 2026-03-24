@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { AppState, Teacher, Observer, Evaluation, Log, Score, HRData } from '../types';
 import { uid } from '../utils/helpers';
+import { db, auth } from '../firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const INIT_STATE: AppState = {
   currentUser: null,
@@ -51,20 +54,57 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, setState] = useState<AppState>(() => {
-    try {
-      const saved = localStorage.getItem('gp_eval_v4');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        return { ...INIT_STATE, ...parsed, currentUser: null }; 
-      }
-    } catch (e) {
-      console.error(e);
-    }
-    return INIT_STATE;
-  });
-
+  const [state, setState] = useState<AppState>(INIT_STATE);
   const [toasts, setToasts] = useState<{ id: string; msg: string; type: string }[]>([]);
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
+  useEffect(() => {
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsAuthReady(true);
+      }
+    });
+    return unsubscribeAuth;
+  }, []);
+
+  // Firebase Sync
+  useEffect(() => {
+    if (!isAuthReady) return;
+
+    const unsub = onSnapshot(doc(db, 'appData', 'main'), (docSnap) => {
+      if (docSnap.exists()) {
+        if (!docSnap.metadata.hasPendingWrites) {
+          const data = docSnap.data() as AppState;
+          setState(prev => ({ ...data, currentUser: prev.currentUser }));
+        }
+      } else {
+        const stateToSave = { ...INIT_STATE };
+        delete (stateToSave as any).currentUser;
+        setDoc(doc(db, 'appData', 'main'), stateToSave).catch(console.error);
+      }
+    }, (error) => {
+      console.error("Firestore Sync Error:", error);
+      if (error.code === 'permission-denied') {
+        showToast("Database access denied. Please enable Anonymous Auth in Firebase Console.", "error");
+      }
+    });
+    return unsub;
+  }, [isAuthReady]);
+
+  const updateAndSaveState = (updater: (prev: AppState) => AppState) => {
+    setState(prev => {
+      const next = updater(prev);
+      const stateToSave = { ...next };
+      delete (stateToSave as any).currentUser;
+      setDoc(doc(db, 'appData', 'main'), stateToSave).catch((error) => {
+        console.error("Firestore Save Error:", error);
+        if (error.code === 'permission-denied') {
+          showToast("Failed to save data. Please enable Anonymous Auth in Firebase Console.", "error");
+        }
+      });
+      return next;
+    });
+  };
 
   // Session persistence
   useEffect(() => {
@@ -77,11 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       } catch {}
     }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('gp_eval_v4', JSON.stringify(state));
-  }, [state]);
+  }, [state.observers]);
 
   const addLog = (action: string, details: string, type: Log['type'], user?: Observer) => {
     const u = user || state.currentUser;
@@ -95,7 +131,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       details,
       type
     };
-    setState(prev => ({ ...prev, logs: [...prev.logs, newLog] }));
+    updateAndSaveState(prev => ({ ...prev, logs: [...prev.logs, newLog] }));
   };
 
   const showToast = (msg: string, type: 'success' | 'error' | 'info' | 'warning' = 'info') => {
@@ -121,7 +157,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addTeacher = (t: Teacher) => {
-    setState(prev => ({ ...prev, teachers: [...prev.teachers, t] }));
+    updateAndSaveState(prev => ({ ...prev, teachers: [...prev.teachers, t] }));
     addLog('ADD_FACULTY', `Registered: ${t.fullName}`, 'CREATE');
     showToast(`${t.fullName} added.`, 'success');
   };
@@ -129,14 +165,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteTeacher = (id: string) => {
     const t = state.teachers.find(x => x.id === id);
     if (t) {
-      setState(prev => ({ ...prev, teachers: prev.teachers.filter(x => x.id !== id) }));
+      updateAndSaveState(prev => ({ ...prev, teachers: prev.teachers.filter(x => x.id !== id) }));
       addLog('DELETE_FACULTY', `Removed: ${t.fullName}`, 'DELETE');
       showToast('Faculty member removed.', 'success');
     }
   };
 
   const saveEvaluation = (ev: Evaluation) => {
-    setState(prev => {
+    updateAndSaveState(prev => {
       const idx = prev.evaluations.findIndex(e => e.id === ev.id);
       let newEvals = [...prev.evaluations];
       if (idx >= 0) newEvals[idx] = ev;
@@ -157,7 +193,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteEvaluation = (id: string) => {
     const ev = state.evaluations.find(e => e.id === id);
     if (ev) {
-      setState(prev => ({ ...prev, evaluations: prev.evaluations.filter(e => e.id !== id) }));
+      updateAndSaveState(prev => ({ ...prev, evaluations: prev.evaluations.filter(e => e.id !== id) }));
       const t = state.teachers.find(x => x.id === ev.tid);
       addLog('DELETE_EVAL', `Deleted ${ev.draft ? 'draft' : 'eval'} for ${t?.fullName}`, 'DELETE');
       showToast('Deleted.', 'success');
@@ -165,13 +201,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addUser = (user: Observer) => {
-    setState(prev => ({ ...prev, observers: [...prev.observers, user] }));
+    updateAndSaveState(prev => ({ ...prev, observers: [...prev.observers, user] }));
     addLog('ADD_USER', `Created: ${user.username}`, 'CREATE');
     showToast(`Account created for ${user.name}.`, 'success');
   };
 
   const updateUser = (user: Observer) => {
-    setState(prev => ({
+    updateAndSaveState(prev => ({
       ...prev,
       observers: prev.observers.map(o => o.id === user.id ? user : o)
     }));
@@ -182,20 +218,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const deleteUser = (id: string) => {
     const u = state.observers.find(x => x.id === id);
     if (u) {
-      setState(prev => ({ ...prev, observers: prev.observers.filter(x => x.id !== id) }));
+      updateAndSaveState(prev => ({ ...prev, observers: prev.observers.filter(x => x.id !== id) }));
       addLog('DELETE_USER', `Removed: ${u.username}`, 'DELETE');
       showToast('User account removed.', 'success');
     }
   };
 
   const updateWeights = (type: string, weights: number[]) => {
-    setState(prev => ({ ...prev, customWeights: { ...prev.customWeights, [type]: weights } }));
+    updateAndSaveState(prev => ({ ...prev, customWeights: { ...prev.customWeights, [type]: weights } }));
     addLog('UPDATE_WEIGHTS', `Updated ${type} weights`, 'UPDATE');
     showToast('Weights saved.', 'success');
   };
 
   const resetWeights = (type: string) => {
-    setState(prev => {
+    updateAndSaveState(prev => {
       const next = { ...prev.customWeights };
       delete next[type];
       return { ...prev, customWeights: next };
@@ -205,7 +241,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateHRData = (data: HRData) => {
-    setState(prev => {
+    updateAndSaveState(prev => {
       const idx = prev.hrData.findIndex(d => d.teacherId === data.teacherId);
       let newHR = [...prev.hrData];
       if (idx >= 0) newHR[idx] = data;
@@ -217,19 +253,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateHRWeight = (weight: number) => {
-    setState(prev => ({ ...prev, hrWeight: weight }));
+    updateAndSaveState(prev => ({ ...prev, hrWeight: weight }));
     addLog('UPDATE_HR_WEIGHT', `Updated HR weight to ${weight}%`, 'UPDATE');
     showToast('HR weight updated.', 'success');
   };
 
   const updateHRRubric = (rubric: AppState['hrRubric']) => {
-    setState(prev => ({ ...prev, hrRubric: rubric }));
+    updateAndSaveState(prev => ({ ...prev, hrRubric: rubric }));
     addLog('UPDATE_HR_RUBRIC', 'Updated HR scoring thresholds', 'UPDATE');
     showToast('HR rubric updated.', 'success');
   };
 
   const resetSystem = () => {
-    setState({ ...INIT_STATE, currentUser: state.currentUser });
+    updateAndSaveState(prev => ({ ...INIT_STATE, currentUser: prev.currentUser }));
     addLog('RESET_SYSTEM', 'System reset to demo data', 'DELETE');
     showToast('System reset.', 'success');
   };

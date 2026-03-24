@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
 import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF } from '../constants';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SettingsProps {
   state: AppState;
@@ -12,6 +13,7 @@ interface SettingsProps {
 }
 
 const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeights, onResetSystem, onUpdateHRWeight, onUpdateHRRubric }) => {
+  const { t } = useLanguage();
   const [editingWeights, setEditingWeights] = useState<Record<string, number[]>>({});
   const [hrWeight, setHrWeight] = useState(state.hrWeight || 5);
   const [hrRubric, setHrRubric] = useState(state.hrRubric);
@@ -32,7 +34,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
     const weights = getWeights(type);
     const sum = weights.reduce((a, b) => a + b, 0);
     if (sum !== 100) {
-      alert(`Weights for ${TYPE_LABELS[type]} must sum to exactly 100% (currently ${sum}%).`);
+      alert(t('set.weightsSumError').replace('{type}', TYPE_LABELS[type]).replace('{sum}', sum.toString()));
       return;
     }
     onUpdateWeights(type, weights);
@@ -44,7 +46,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
   };
 
   const handleReset = (type: string) => {
-    if (confirm(`Reset ${TYPE_LABELS[type]} weights to default values?`)) {
+    if (confirm(t('set.resetConfirm').replace('{type}', TYPE_LABELS[type]))) {
       onResetWeights(type);
       setEditingWeights(prev => {
         const next = { ...prev };
@@ -55,23 +57,23 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
   };
 
   const sysCards = [
-    { l: 'Faculty', i: 'people', v: state.teachers.length, c: '#2563eb' },
-    { l: 'Completed Evals', i: 'assignment_turned_in', v: state.evaluations.filter(e => !e.draft).length, c: '#10b981' },
-    { l: 'Drafts', i: 'edit_note', v: state.evaluations.filter(e => e.draft).length, c: '#f59e0b' },
-    { l: 'Users', i: 'manage_accounts', v: state.observers.length, c: '#7c3aed' },
-    { l: 'Audit Events', i: 'history', v: state.logs.length, c: 'var(--slate)' }
+    { l: t('set.faculty'), i: 'people', v: state.teachers.length, c: '#2563eb' },
+    { l: t('set.completedEvals'), i: 'assignment_turned_in', v: state.evaluations.filter(e => !e.draft).length, c: '#10b981' },
+    { l: t('set.drafts'), i: 'edit_note', v: state.evaluations.filter(e => e.draft).length, c: '#f59e0b' },
+    { l: t('set.users'), i: 'manage_accounts', v: state.observers.length, c: '#7c3aed' },
+    { l: t('set.auditEvents'), i: 'history', v: state.logs.length, c: 'var(--slate)' }
   ];
 
   return (
     <div className="page">
       <div className="ph">
-        <h1 className="ph-title" style={{ fontSize: '42px', fontWeight: 900, marginBottom: '8px' }}>System Settings</h1>
-        <p className="ph-sub" style={{ fontSize: '16px' }}>Manage domain weights, HR integration, and system data.</p>
+        <h1 className="ph-title" style={{ fontSize: '42px', fontWeight: 900, marginBottom: '8px' }}>{t('set.title')}</h1>
+        <p className="ph-sub" style={{ fontSize: '16px' }}>{t('set.sub')}</p>
       </div>
 
       <div className="card-xl" style={{ padding: '32px', marginBottom: '32px' }}>
-        <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>HR Score Weight</h2>
-        <p style={{ fontSize: '15px', color: 'var(--slate)', marginBottom: '24px' }}>Set how much the HR Attendance score contributes to each teacher's final score.</p>
+        <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>{t('set.hrWeight')}</h2>
+        <p style={{ fontSize: '15px', color: 'var(--slate)', marginBottom: '24px' }}>{t('set.hrWeightSub')}</p>
         
         <div className="frow" style={{ gap: '32px', alignItems: 'center' }}>
           <div style={{ flex: 1, maxWidth: '400px' }}>
@@ -93,13 +95,13 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
             style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800, letterSpacing: '0.05em' }}
             onClick={() => onUpdateHRWeight(hrWeight)}
           >
-            SAVE
+            {t('set.save')}
           </button>
         </div>
         
         <div style={{ marginTop: '24px', padding: '12px 20px', background: 'var(--bg)', borderRadius: '12px', display: 'inline-block' }}>
           <p style={{ fontSize: '14px', fontWeight: 600, color: 'var(--slate)', margin: 0 }}>
-            Final Score = <span style={{ color: 'var(--navy)' }}>(Observation × {100 - hrWeight}%)</span> + <span style={{ color: '#2563eb' }}>(HR × {hrWeight}%)</span>
+            {t('set.finalScoreCalc').replace('{obsWeight}', (100 - hrWeight).toString()).replace('{hrWeight}', hrWeight.toString())}
           </p>
         </div>
       </div>
@@ -107,15 +109,15 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
       <div className="card-xl" style={{ padding: '32px', marginBottom: '32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <div>
-            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>HR Scoring Rubric</h2>
-            <p style={{ fontSize: '15px', color: 'var(--slate)' }}>Define the thresholds for each score level (4, 3, 2, 1). Values represent the <strong>maximum</strong> count for that score.</p>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>{t('set.hrRubric')}</h2>
+            <p style={{ fontSize: '15px', color: 'var(--slate)' }}>{t('set.hrRubricDesc')}</p>
           </div>
           <button 
             className="btn btn-primary" 
             style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800 }}
             onClick={() => onUpdateHRRubric(hrRubric)}
           >
-            SAVE RUBRIC
+            {t('set.saveRubric')}
           </button>
         </div>
 
@@ -126,7 +128,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                 <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
                   {key === 'absences' ? 'event_busy' : key === 'earlyLeaves' ? 'exit_to_app' : 'schedule'}
                 </span>
-                {key.replace(/([A-Z])/g, ' $1')}
+                {t(`set.${key}`)}
               </h3>
               <div style={{ display: 'grid', gap: '12px' }}>
                 {[4, 3, 2].map((score, idx) => (
@@ -135,7 +137,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                       <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: score === 4 ? '#10b981' : score === 3 ? '#2563eb' : '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px' }}>
                         {score}
                       </div>
-                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--slate-dark)' }}>Max Count</span>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--slate-dark)' }}>{t('set.maxCount')}</span>
                     </div>
                     <input 
                       type="number" 
@@ -154,7 +156,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                 <div style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.05)', border: '1px dashed #fecaca', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                     <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#ef4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px' }}>1</div>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#991b1b' }}>Anything above</span>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#991b1b' }}>{t('set.anythingAbove')}</span>
                   </div>
                   <span style={{ fontSize: '14px', fontWeight: 800, color: '#991b1b', paddingRight: '12px' }}>{hrRubric[key][2]}+</span>
                 </div>
@@ -166,8 +168,8 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
 
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
-          <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>Domain Weight Editor</h2>
-          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em' }}>MUST SUM TO 100%</span>
+          <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '32px', fontWeight: 900, color: 'var(--navy)' }}>{t('set.domainWeightEditor')}</h2>
+          <span style={{ background: '#dbeafe', color: '#1e40af', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '.1em' }}>{t('set.mustSum100')}</span>
         </div>
         
         <div style={{ display: 'grid', gap: '24px' }}>
@@ -186,12 +188,12 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                     </div>
                     <div>
                       <h3 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{label}</h3>
-                      <div style={{ fontSize: '12px', color: 'var(--slate)', fontWeight: 600 }}>{rubricDef.length} domains · {rubricDef.reduce((a, d) => a + d.subdomains.reduce((b, s) => b + s.indicators.length, 0), 0)} indicators</div>
+                      <div style={{ fontSize: '12px', color: 'var(--slate)', fontWeight: 600 }}>{rubricDef.length} {t('set.domains')} · {rubricDef.reduce((a, d) => a + d.subdomains.reduce((b, s) => b + s.indicators.length, 0), 0)} {t('set.indicators')}</div>
                     </div>
                   </div>
                   <div className="frow" style={{ gap: '16px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--slate)' }}>SUM</div>
+                      <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--slate)' }}>{t('set.sum')}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ color: isOk ? '#15803d' : '#dc2626', fontSize: '24px', fontWeight: 900, fontFamily: '"Barlow Condensed", sans-serif' }}>{wtSum}%</div>
                         {isOk && (
@@ -202,9 +204,9 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                       </div>
                     </div>
                     <div style={{ width: '1px', height: '40px', background: 'var(--border)' }}></div>
-                    <button className="btn btn-ghost btn-sm" style={{ fontWeight: 700 }} onClick={() => handleReset(type)}>RESET</button>
+                    <button className="btn btn-ghost btn-sm" style={{ fontWeight: 700 }} onClick={() => handleReset(type)}>{t('set.resetBtn')}</button>
                     <button className="btn btn-primary btn-sm" style={{ padding: '8px 20px', fontWeight: 800 }} onClick={() => handleSave(type)} disabled={!isOk}>
-                      SAVE
+                      {t('set.save')}
                     </button>
                   </div>
                 </div>
@@ -241,10 +243,10 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
             <span className="material-icons-outlined" style={{ fontSize: '24px' }}>warning</span>
           </div>
           <div>
-            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: '#dc2626', marginBottom: '8px' }}>Danger Zone</h2>
-            <p style={{ color: '#7f1d1d', fontSize: '14px', marginBottom: '16px', maxWidth: '600px', lineHeight: 1.6 }}>Reset all system data to factory demo defaults. All evaluations, drafts, audit logs, and custom weights will be permanently deleted. This action cannot be undone.</p>
-            <button className="btn btn-danger" onClick={() => { if(confirm('This will permanently delete ALL evaluations, drafts, audit logs, and custom weights. Faculty and users will be restored to demo defaults. This cannot be undone.')) onResetSystem(); }}>
-              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>restart_alt</span> Reset System to Demo Data
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: '#dc2626', marginBottom: '8px' }}>{t('set.dangerZone')}</h2>
+            <p style={{ color: '#7f1d1d', fontSize: '14px', marginBottom: '16px', maxWidth: '600px', lineHeight: 1.6 }}>{t('set.dangerDesc')}</p>
+            <button className="btn btn-danger" onClick={() => { if(confirm(t('set.resetSystemConfirm'))) onResetSystem(); }}>
+              <span className="material-icons-outlined" style={{ fontSize: '18px' }}>restart_alt</span> {t('set.resetSystemBtn')}
             </button>
           </div>
         </div>
