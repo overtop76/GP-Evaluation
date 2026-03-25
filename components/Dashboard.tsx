@@ -2,7 +2,7 @@ import React from 'react';
 import { AppState } from '../types';
 import { computeScore, getRating, countInds, fmtD, ini, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS, TYPE_COLORS } from '../constants';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
 
 interface DashboardProps {
@@ -85,18 +85,62 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
 
   const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
 
+  const ratingCounts = React.useMemo(() => {
+    const counts = { 4: 0, 3: 0, 2: 0, 1: 0 };
+    finals.forEach(e => {
+      const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
+      const score = computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric);
+      const rating = getRating(score);
+      counts[rating.level as 1|2|3|4]++;
+    });
+    return counts;
+  }, [finals, state.hrData, state.customWeights, state.hrWeight, hrRubric]);
+
+  const totalRatings = finals.length;
+
+  const ratingChartData = React.useMemo(() => {
+    if (totalRatings === 0) return [];
+    return [
+      { name: t('lvl.4') || 'Exemplary', value: ratingCounts[4], color: '#10b981' },
+      { name: t('lvl.3') || 'Proficient', value: ratingCounts[3], color: '#3b82f6' },
+      { name: t('lvl.2') || 'Developing', value: ratingCounts[2], color: '#f59e0b' },
+      { name: t('lvl.1') || 'Unsatisfactory', value: ratingCounts[1], color: '#ef4444' }
+    ].filter(d => d.value > 0);
+  }, [ratingCounts, totalRatings, t]);
+
   // Prepare HR data for chart
-  const hrChartData = React.useMemo(() => allowedTeachers.map(tData => {
-    const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
-    const s1 = getHRScore('absences', data.absences, hrRubric.absences);
-    const s2 = getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
-    const s3 = getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
-    const avg = (s1 + s2 + s3) / 3;
+  const overallHRData = React.useMemo(() => {
+    if (allowedTeachers.length === 0) return { absences: 0, earlyLeaves: 0, lateArrivals: 0, overall: 0 };
+    
+    let totalAbsencesScore = 0;
+    let totalEarlyLeavesScore = 0;
+    let totalLateArrivalsScore = 0;
+    
+    allowedTeachers.forEach(tData => {
+      const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
+      totalAbsencesScore += getHRScore('absences', data.absences, hrRubric.absences);
+      totalEarlyLeavesScore += getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
+      totalLateArrivalsScore += getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
+    });
+    
+    const count = allowedTeachers.length;
+    const avgAbsences = totalAbsencesScore / count;
+    const avgEarlyLeaves = totalEarlyLeavesScore / count;
+    const avgLateArrivals = totalLateArrivalsScore / count;
+    
     return {
-      name: tData.fullName.split(' ')[0],
-      score: parseFloat(avg.toFixed(2))
+      absences: parseFloat(avgAbsences.toFixed(2)),
+      earlyLeaves: parseFloat(avgEarlyLeaves.toFixed(2)),
+      lateArrivals: parseFloat(avgLateArrivals.toFixed(2)),
+      overall: parseFloat(((avgAbsences + avgEarlyLeaves + avgLateArrivals) / 3).toFixed(2))
     };
-  }).sort((a, b) => b.score - a.score).slice(0, 10), [allowedTeachers, state.hrData, hrRubric]);
+  }, [allowedTeachers, state.hrData, hrRubric]);
+
+  const hrBarChartData = React.useMemo(() => [
+    { name: t('hr.absences') || 'Absences', score: overallHRData.absences },
+    { name: t('hr.earlyLeaves') || 'Early Leaves', score: overallHRData.earlyLeaves },
+    { name: t('hr.lateArrivals') || 'Late Arrivals', score: overallHRData.lateArrivals }
+  ], [overallHRData, t]);
 
   return (
     <div className="page">
@@ -126,30 +170,74 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
         ))}
       </div>
 
-      {trendData.length > 1 && (
-        <div className="card-xl" style={{ padding: '24px', marginBottom: '24px' }}>
-          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '36px', height: '36px', background: 'rgba(37, 99, 235, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
-              <span className="material-icons-outlined">show_chart</span>
+      <div style={{ display: 'grid', gridTemplateColumns: trendData.length > 1 ? '2fr 1fr' : '1fr', gap: '24px', marginBottom: '24px' }}>
+        {trendData.length > 1 && (
+          <div className="card-xl" style={{ padding: '24px' }}>
+            <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '36px', height: '36px', background: 'rgba(37, 99, 235, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}>
+                <span className="material-icons-outlined">show_chart</span>
+              </div>
+              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>{t('dash.perfTrend')}</h2>
             </div>
-            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>{t('dash.perfTrend')}</h2>
+            <div style={{ height: '300px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[1, 4]} tick={{ fontSize: 12, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    itemStyle={{ color: 'var(--navy2)', fontWeight: 600 }}
+                  />
+                  <Line type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        <div className="card-xl" style={{ padding: '24px' }}>
+          <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
+              <span className="material-icons-outlined">donut_large</span>
+            </div>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>{t('dash.overallEval')}</h2>
           </div>
           <div style={{ height: '300px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[1, 4]} tick={{ fontSize: 12, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                  itemStyle={{ color: 'var(--navy2)', fontWeight: 600 }}
-                />
-                <Line type="monotone" dataKey="score" stroke="#2563eb" strokeWidth={3} dot={{ r: 4, fill: '#2563eb', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-              </LineChart>
-            </ResponsiveContainer>
+            {ratingChartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={ratingChartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={100}
+                    paddingAngle={5}
+                    dataKey="value"
+                    label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {ratingChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [`${value} (${((value / totalRatings) * 100).toFixed(1)}%)`, t('dash.evaluations') || 'Evaluations']}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty" style={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <span className="material-icons mi">pie_chart_outline</span>
+                <p>{t('dash.noData')}</p>
+              </div>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px', marginBottom: '24px' }}>
         <div className="card-xl" style={{ overflow: 'hidden' }}>
@@ -283,29 +371,45 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        <div className="card-xl" style={{ padding: '24px' }}>
+        <div className="card-xl" style={{ padding: '24px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '36px', height: '36px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
               <span className="material-icons-outlined">event_available</span>
             </div>
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '22px', fontWeight: 800, color: 'var(--navy)' }}>{t('dash.hrAttendance')}</h2>
           </div>
-          <div style={{ height: '250px' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hrChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
-                <Tooltip 
-                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
-                />
-                <Bar dataKey="score" radius={[4, 4, 0, 0]} barSize={30}>
-                  {hrChartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.score >= 3.5 ? '#10b981' : entry.score >= 2.5 ? '#6366f1' : '#f43f5e'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          
+          <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
+            <div style={{ flex: 2, height: '250px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={hrBarChartData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 4]} tick={{ fontSize: 11, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
+                  <Tooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                    cursor={{ fill: 'rgba(99, 102, 241, 0.05)' }}
+                  />
+                  <Bar dataKey="score" radius={[4, 4, 0, 0]} barSize={40}>
+                    {hrBarChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.score >= 3.5 ? '#10b981' : entry.score >= 2.5 ? '#6366f1' : '#f43f5e'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: 'var(--bg)', borderRadius: '16px', padding: '20px', border: '1px solid var(--border)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '8px', textAlign: 'center' }}>
+                {t('dash.overallHrScore') || 'Overall HR Score'}
+              </div>
+              <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '48px', fontWeight: 900, color: overallHRData.overall >= 3.5 ? '#10b981' : overallHRData.overall >= 2.5 ? '#6366f1' : '#f43f5e', lineHeight: 1 }}>
+                {overallHRData.overall.toFixed(2)}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--slate)', marginTop: '8px', fontWeight: 600 }}>
+                {t('dash.outOf4') || 'out of 4.0'}
+              </div>
+            </div>
           </div>
         </div>
 
