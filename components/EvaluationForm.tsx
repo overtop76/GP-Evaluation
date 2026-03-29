@@ -3,6 +3,7 @@ import { Teacher, Observer, Evaluation, Score } from '../types';
 import { getRubric, countInds, uid } from '../utils/helpers';
 import { TYPE_LABELS, LEVEL_LABELS, LEVEL_COLORS, LEVEL_BG } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
+import { useApp } from '../context/AppContext';
 
 interface EvaluationFormProps {
   teachers: Teacher[];
@@ -16,6 +17,7 @@ interface EvaluationFormProps {
 
 const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, customWeights, initialData, currentUser, onSave, onCancel }) => {
   const { t } = useLanguage();
+  const { showToast } = useApp();
   const [type, setType] = useState(initialData?.type || 'gp');
   const [tid, setTid] = useState(initialData?.tid || '');
   const [oid, setOid] = useState(initialData?.oid || currentUser.id);
@@ -23,6 +25,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [comments, setComments] = useState(initialData?.comments || '');
   const [di, setDi] = useState(0); // Domain Index
+  const [confirmSwitch, setConfirmSwitch] = useState<string | null>(null);
 
   useEffect(() => {
     if (initialData?.scores) {
@@ -66,19 +69,24 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
 
   const handleSave = (draft: boolean) => {
     if (!tid) {
-      alert(t('eval.alertSelectStaff'));
+      showToast(t('eval.alertSelectStaff'), 'error');
       return;
     }
     if (!draft && (!oid || !isComplete)) {
-      alert(t('eval.alertComplete'));
+      showToast(t('eval.alertComplete'), 'error');
       return;
     }
 
-    const scoreList: Score[] = Object.entries(scores).map(([id, score]) => ({ 
-      id, 
-      score: score as number,
-      notes: notes[id]
-    }));
+    const scoreList: Score[] = Object.entries(scores).map(([id, score]) => {
+      const s: Score = { 
+        id, 
+        score: score as number
+      };
+      if (notes[id]) {
+        s.notes = notes[id];
+      }
+      return s;
+    });
     const ev: Evaluation = {
       id: initialData?.id || uid(),
       type,
@@ -95,11 +103,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
   const changeType = (tKey: string) => {
     if (type === tKey) return;
     if (Object.keys(scores).length > 0) {
-      if (confirm(t('eval.confirmSwitch'))) {
-        setType(tKey);
-        setScores({});
-        setDi(0);
-      }
+      setConfirmSwitch(tKey);
     } else {
       setType(tKey);
       setDi(0);
@@ -156,6 +160,28 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
             ))}
           </div>
         </div>
+
+        {confirmSwitch && (
+          <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmSwitch(null)}>
+            <div className="mbox" style={{ maxWidth: '400px' }}>
+              <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+                {t('eval.confirmSwitch')}
+              </h2>
+              <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+                {t('eval.confirmSwitchDesc') || 'Changing the evaluation type will discard your current progress. Are you sure?'}
+              </p>
+              <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+                <button className="btn btn-ghost" onClick={() => setConfirmSwitch(null)}>{t('action.cancel') || 'Cancel'}</button>
+                <button className="btn btn-danger" onClick={() => {
+                  setType(confirmSwitch);
+                  setScores({});
+                  setDi(0);
+                  setConfirmSwitch(null);
+                }}>{t('action.confirm') || 'Confirm'}</button>
+              </div>
+            </div>
+          </div>
+        )}
         <div style={{ padding: '24px', borderBottom: '1px solid var(--border)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
           <div className="field" style={{ marginBottom: 0 }}>
             <label className="flabel">{t('eval.selectStaff')}</label>

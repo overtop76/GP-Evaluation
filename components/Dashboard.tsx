@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { AppState } from '../types';
 import { computeScore, getRating, countInds, fmtD, ini, getHRScore } from '../utils/helpers';
 import { TYPE_LABELS, TYPE_COLORS } from '../constants';
@@ -14,6 +14,7 @@ interface DashboardProps {
 const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvaluation }) => {
   const currentUser = state.currentUser;
   const { t } = useLanguage();
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   
   // Filter data based on permissions
   const allowedTeachers = React.useMemo(() => state.teachers.filter(tData => {
@@ -288,9 +289,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
                         <div className="frow" style={{ gap: '8px', justifyContent: 'flex-end' }}>
                           <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: ev.tid, type: ev.type })}>{t('action.report')}</button>
                           <button className="icon-btn" onClick={() => {
-                            if (window.confirm(t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?')) {
-                              onDeleteEvaluation(ev.id);
-                            }
+                            setConfirmDelete(ev.id);
                           }} title={t('action.delete')}>
                             <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
                           </button>
@@ -349,9 +348,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
                       {t('action.resume')}
                     </button>
                     <button className="icon-btn" onClick={() => {
-                      if (window.confirm(t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?')) {
-                        onDeleteEvaluation(ev.id);
-                      }
+                      setConfirmDelete(ev.id);
                     }} title={t('action.discard')}>
                       <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>close</span>
                     </button>
@@ -441,6 +438,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
           </div>
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {t('action.delete')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?'}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                onDeleteEvaluation(confirmDelete);
+                setConfirmDelete(null);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

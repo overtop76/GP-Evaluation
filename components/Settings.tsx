@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppState } from '../types';
 import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF, SUBJECTS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
+import { useApp } from '../context/AppContext';
 
 interface SettingsProps {
   state: AppState;
@@ -15,10 +16,12 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeights, onResetSystem, onUpdateHRWeight, onUpdateHRRubric, onUpdateCustomSubjects }) => {
   const { t } = useLanguage();
+  const { showToast } = useApp();
   const [editingWeights, setEditingWeights] = useState<Record<string, number[]>>({});
   const [hrWeight, setHrWeight] = useState(state.hrWeight || 5);
   const [hrRubric, setHrRubric] = useState(state.hrRubric || { absences: [2, 5, 9], earlyLate: [2, 4, 7] });
   const [newSubject, setNewSubject] = useState('');
+  const [confirmAction, setConfirmAction] = useState<{ type: string, payload?: any } | null>(null);
 
   React.useEffect(() => {
     if (state.hrRubric) {
@@ -31,7 +34,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
     if (!trimmed) return;
     const currentSubjects = state.customSubjects || [];
     if (currentSubjects.some(s => s.toLowerCase() === trimmed.toLowerCase()) || SUBJECTS.some(s => s.toLowerCase() === trimmed.toLowerCase())) {
-      alert('Subject already exists');
+      showToast('Subject already exists', 'error');
       return;
     }
     onUpdateCustomSubjects([...currentSubjects, trimmed]);
@@ -39,9 +42,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
   };
 
   const handleRemoveSubject = (subject: string) => {
-    if (confirm(`Remove subject "${subject}"?`)) {
-      onUpdateCustomSubjects((state.customSubjects || []).filter(s => s !== subject));
-    }
+    setConfirmAction({ type: 'removeSubject', payload: subject });
   };
 
   const getWeights = (type: string) => {
@@ -60,7 +61,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
     const weights = getWeights(type);
     const sum = weights.reduce((a, b) => a + b, 0);
     if (sum !== 100) {
-      alert(t('set.weightsSumError').replace('{type}', TYPE_LABELS[type]).replace('{sum}', sum.toString()));
+      showToast(t('set.weightsSumError').replace('{type}', TYPE_LABELS[type]).replace('{sum}', sum.toString()), 'error');
       return;
     }
     onUpdateWeights(type, weights);
@@ -72,14 +73,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
   };
 
   const handleReset = (type: string) => {
-    if (confirm(t('set.resetConfirm').replace('{type}', TYPE_LABELS[type]))) {
-      onResetWeights(type);
-      setEditingWeights(prev => {
-        const next = { ...prev };
-        delete next[type];
-        return next;
-      });
-    }
+    setConfirmAction({ type: 'resetWeights', payload: type });
   };
 
   const sysCards = [
@@ -311,12 +305,45 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
           <div>
             <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: '#dc2626', marginBottom: '8px' }}>{t('set.dangerZone')}</h2>
             <p style={{ color: '#7f1d1d', fontSize: '14px', marginBottom: '16px', maxWidth: '600px', lineHeight: 1.6 }}>{t('set.dangerDesc')}</p>
-            <button className="btn btn-danger" onClick={() => { if(confirm(t('set.resetSystemConfirm'))) onResetSystem(); }}>
+            <button className="btn btn-danger" onClick={() => setConfirmAction({ type: 'resetSystem' })}>
               <span className="material-icons-outlined" style={{ fontSize: '18px' }}>restart_alt</span> {t('set.resetSystemBtn')}
             </button>
           </div>
         </div>
       </div>
+
+      {confirmAction && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmAction(null)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {confirmAction.type === 'resetSystem' ? t('set.resetSystemBtn') : t('action.confirm')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {confirmAction.type === 'removeSubject' && `Remove subject "${confirmAction.payload}"?`}
+              {confirmAction.type === 'resetWeights' && t('set.resetConfirm').replace('{type}', TYPE_LABELS[confirmAction.payload])}
+              {confirmAction.type === 'resetSystem' && t('set.resetSystemConfirm')}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmAction(null)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                if (confirmAction.type === 'removeSubject') {
+                  onUpdateCustomSubjects((state.customSubjects || []).filter(s => s !== confirmAction.payload));
+                } else if (confirmAction.type === 'resetWeights') {
+                  onResetWeights(confirmAction.payload);
+                  setEditingWeights(prev => {
+                    const next = { ...prev };
+                    delete next[confirmAction.payload];
+                    return next;
+                  });
+                } else if (confirmAction.type === 'resetSystem') {
+                  onResetSystem();
+                }
+                setConfirmAction(null);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { Teacher, Evaluation, HRData, Observer } from '../types';
 import { computeScore, getRating, ini } from '../utils/helpers';
 import { SUBJECTS, ROLES, DIVS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
+import { useApp } from '../context/AppContext';
 
 interface TeacherDirectoryProps {
   teachers: Teacher[];
@@ -21,9 +22,11 @@ interface TeacherDirectoryProps {
 
 const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, customSubjects, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onUpdateTeacher, onDeleteTeacher, onNavigate }) => {
   const { t } = useLanguage();
+  const { showToast } = useApp();
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Teacher | null>(null);
   
   // New Teacher Form State
   const [newName, setNewName] = useState('');
@@ -54,12 +57,12 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
 
   const handleAdd = () => {
     if (!newName || !newEmployeeId || !newSubject || !newRole || !newDivs.length) {
-      alert(t('dir.alertComplete'));
+      showToast(t('dir.alertComplete'), 'error');
       return;
     }
     // Check if employee ID is unique (only if adding new or changing ID)
     if ((!editingTeacher || editingTeacher.employeeId !== newEmployeeId) && teachers.some(tData => tData.employeeId === newEmployeeId)) {
-      alert(t('dir.alertUnique'));
+      showToast(t('dir.alertUnique'), 'error');
       return;
     }
 
@@ -211,9 +214,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                               <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--blue)' }}>edit</span>
                             </button>
                             <button className="icon-btn" onClick={() => {
-                              if (window.confirm(t('dir.confirmDelete') || 'Are you sure you want to delete this teacher?')) {
-                                onDeleteTeacher(tData.id);
-                              }
+                              setConfirmDelete(tData);
                             }} title={t('action.delete')}>
                               <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
                             </button>
@@ -237,6 +238,26 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
           </table>
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {t('action.delete')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {t('dir.confirmDelete') || 'Are you sure you want to delete this teacher?'}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                onDeleteTeacher(confirmDelete.id);
+                setConfirmDelete(null);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>

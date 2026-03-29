@@ -7,7 +7,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { getHRScore } from '../utils/helpers';
 
 const HRAttendance: React.FC = () => {
-  const { state, updateHRData, updateHRWeight } = useApp();
+  const { state, updateHRData, updateHRWeight, showToast } = useApp();
   const { t } = useLanguage();
   const hrRubric = { 
     absences: state.hrRubric?.absences || [2, 5, 9], 
@@ -16,6 +16,7 @@ const HRAttendance: React.FC = () => {
   const [editingWeight, setEditingWeight] = useState(false);
   const [weightInput, setWeightInput] = useState((state.hrWeight ?? 5).toString());
   const [search, setSearch] = useState('');
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const handleWeightSave = () => {
     const w = parseInt(weightInput, 10);
@@ -23,22 +24,12 @@ const HRAttendance: React.FC = () => {
       updateHRWeight(w);
       setEditingWeight(false);
     } else {
-      alert(t('hr.weightHelp'));
+      showToast(t('hr.weightHelp'), 'error');
     }
   };
 
   const handleBulkReset = () => {
-    if (window.confirm(t('hr.confirmReset'))) {
-      state.teachers.forEach(t => {
-        updateHRData({
-          teacherId: t.id,
-          absences: 0,
-          earlyLate: 0,
-          notes: '',
-          lastUpdated: new Date().toISOString()
-        });
-      });
-    }
+    setConfirmReset(true);
   };
 
   const filteredTeachers = useMemo(() => state.teachers.filter(t => 
@@ -323,6 +314,34 @@ const HRAttendance: React.FC = () => {
           </tbody>
         </table>
       </div>
+
+      {confirmReset && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmReset(false)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {t('action.confirm')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {t('hr.confirmReset')}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmReset(false)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                state.teachers.forEach(t => {
+                  updateHRData({
+                    teacherId: t.id,
+                    absences: 0,
+                    earlyLate: 0,
+                    notes: '',
+                    lastUpdated: new Date().toISOString()
+                  });
+                });
+                setConfirmReset(false);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -126,7 +126,10 @@ const AppContent: React.FC = () => {
           customWeights={state.customWeights}
           initialData={initialEval}
           currentUser={state.currentUser!}
-          onSave={saveEvaluation} 
+          onSave={(ev) => {
+            saveEvaluation(ev);
+            setActiveTab('dashboard');
+          }} 
           onCancel={() => setActiveTab('dashboard')} 
         />;
       case 'report':

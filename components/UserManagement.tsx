@@ -3,6 +3,7 @@ import { Observer, UserRole, ObserverPermissions } from '../types';
 import { ini, hashPassword } from '../utils/helpers';
 import { SUBJECTS, DIVS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
+import { useApp } from '../context/AppContext';
 
 interface UserManagementProps {
   observers: Observer[];
@@ -14,8 +15,10 @@ interface UserManagementProps {
 
 const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, onAddUser, onDeleteUser, onUpdateUser }) => {
   const { t } = useLanguage();
+  const { showToast } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Observer | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<Observer | null>(null);
   const [newName, setNewName] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newEmployeeId, setNewEmployeeId] = useState('');
@@ -75,23 +78,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
 
   const handleSave = async () => {
     if (!newName || !newEmail || !newEmployeeId || !newUsername || (!editingUser && !newPassword)) {
-      alert(t('user.alertComplete'));
+      showToast(t('user.alertComplete'), 'error');
       return;
     }
     if (!editingUser && observers.find(o => o.username === newUsername.toLowerCase())) {
-      alert(t('user.alertUsername'));
+      showToast(t('user.alertUsername'), 'error');
       return;
     }
     
     // Check if email is unique
     if (observers.some(o => o.email === newEmail.toLowerCase() && o.id !== editingUser?.id)) {
-      alert(t('user.alertEmail'));
+      showToast(t('user.alertEmail'), 'error');
       return;
     }
     
     // Check if employee ID is unique
     if (observers.some(o => o.employeeId === newEmployeeId && o.id !== editingUser?.id)) {
-      alert(t('user.alertEmpId'));
+      showToast(t('user.alertEmpId'), 'error');
       return;
     }
     
@@ -209,12 +212,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   </button>
                   <button className="icon-btn" onClick={() => {
                     if (o.id === currentUser.id) {
-                      alert(t('user.alertOwnAccount'));
+                      showToast(t('user.alertOwnAccount'), 'error');
                       return;
                     }
-                    if (confirm(t('user.confirmDelete').replace('{name}', o.name))) {
-                      onDeleteUser(o.id);
-                    }
+                    setConfirmDelete(o);
                   }} title={t('user.deleteUser')}>
                     <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
                   </button>
@@ -224,6 +225,26 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
           </tbody>
         </table>
       </div>
+
+      {confirmDelete && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {t('action.delete')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {t('user.confirmDelete').replace('{name}', confirmDelete.name)}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                onDeleteUser(confirmDelete.id);
+                setConfirmDelete(null);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>

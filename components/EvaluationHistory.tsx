@@ -18,6 +18,7 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const filtered = React.useMemo(() => evaluations.filter(e => {
     const teacher = teachers.find(tData => tData.id === e.tid);
@@ -126,9 +127,7 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
                         )}
                         {(currentUser.role === 'admin' || e.oid === currentUser.id) && (
                           <button className="icon-btn" onClick={() => {
-                            if (window.confirm(t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?')) {
-                              onDelete(e.id);
-                            }
+                            setConfirmDelete(e.id);
                           }}>
                             <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete</span>
                           </button>
@@ -148,6 +147,26 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
           </table>
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
+          <div className="mbox" style={{ maxWidth: '400px' }}>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>
+              {t('action.delete')}
+            </h2>
+            <p style={{ marginBottom: '24px', color: 'var(--slate)', fontSize: '15px', lineHeight: 1.5 }}>
+              {t('eval.confirmDelete') || 'Are you sure you want to delete this evaluation?'}
+            </p>
+            <div className="frow" style={{ gap: '12px', justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>{t('action.cancel') || 'Cancel'}</button>
+              <button className="btn btn-danger" onClick={() => {
+                onDelete(confirmDelete);
+                setConfirmDelete(null);
+              }}>{t('action.confirm') || 'Confirm'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
