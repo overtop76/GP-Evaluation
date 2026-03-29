@@ -25,8 +25,7 @@ const INIT_STATE: AppState = {
   hrWeight: 5,
   hrRubric: {
     absences: [2, 5, 9],
-    earlyLeaves: [2, 4, 7],
-    lateArrivals: [2, 4, 7],
+    earlyLate: [2, 4, 7],
   },
 };
 
@@ -128,11 +127,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     unsubs.push(onSnapshot(doc(db, 'settings', 'main'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
+        // Handle migration from old hrRubric format
+        let loadedHrRubric = data.hrRubric || INIT_STATE.hrRubric;
+        if (loadedHrRubric && !loadedHrRubric.earlyLate) {
+          loadedHrRubric = {
+            ...loadedHrRubric,
+            earlyLate: loadedHrRubric.earlyLeaves || INIT_STATE.hrRubric.earlyLate
+          };
+        }
+
         setState(prev => ({
           ...prev,
           customWeights: data.customWeights || {},
           hrWeight: data.hrWeight ?? 5,
-          hrRubric: data.hrRubric || INIT_STATE.hrRubric,
+          hrRubric: loadedHrRubric,
           customSubjects: data.customSubjects || []
         }));
         setDbStatus('connected');

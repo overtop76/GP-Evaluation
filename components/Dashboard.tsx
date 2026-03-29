@@ -83,7 +83,10 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
       };
     }), [finals, state.hrData, state.customWeights, state.hrWeight, state.hrRubric, t]);
 
-  const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
+  const hrRubric = { 
+    absences: state.hrRubric?.absences || [2, 5, 9], 
+    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
+  };
 
   const ratingCounts = React.useMemo(() => {
     const counts = { 4: 0, 3: 0, 2: 0, 1: 0 };
@@ -110,36 +113,31 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
 
   // Prepare HR data for chart
   const overallHRData = React.useMemo(() => {
-    if (allowedTeachers.length === 0) return { absences: 0, earlyLeaves: 0, lateArrivals: 0, overall: 0 };
+    if (allowedTeachers.length === 0) return { absences: 0, earlyLate: 0, overall: 0 };
     
     let totalAbsencesScore = 0;
-    let totalEarlyLeavesScore = 0;
-    let totalLateArrivalsScore = 0;
+    let totalEarlyLateScore = 0;
     
     allowedTeachers.forEach(tData => {
-      const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
+      const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLate: 0 };
       totalAbsencesScore += getHRScore('absences', data.absences, hrRubric.absences);
-      totalEarlyLeavesScore += getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
-      totalLateArrivalsScore += getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
+      totalEarlyLateScore += getHRScore('earlyLate', data.earlyLate, hrRubric.earlyLate);
     });
     
     const count = allowedTeachers.length;
     const avgAbsences = totalAbsencesScore / count;
-    const avgEarlyLeaves = totalEarlyLeavesScore / count;
-    const avgLateArrivals = totalLateArrivalsScore / count;
+    const avgEarlyLate = totalEarlyLateScore / count;
     
     return {
       absences: parseFloat(avgAbsences.toFixed(2)),
-      earlyLeaves: parseFloat(avgEarlyLeaves.toFixed(2)),
-      lateArrivals: parseFloat(avgLateArrivals.toFixed(2)),
-      overall: parseFloat(((avgAbsences + avgEarlyLeaves + avgLateArrivals) / 3).toFixed(2))
+      earlyLate: parseFloat(avgEarlyLate.toFixed(2)),
+      overall: parseFloat(((avgAbsences + avgEarlyLate) / 2).toFixed(2))
     };
   }, [allowedTeachers, state.hrData, hrRubric]);
 
   const hrBarChartData = React.useMemo(() => [
     { name: t('hr.absences') || 'Absences', score: overallHRData.absences },
-    { name: t('hr.earlyLeaves') || 'Early Leaves', score: overallHRData.earlyLeaves },
-    { name: t('hr.lateArrivals') || 'Late Arrivals', score: overallHRData.lateArrivals }
+    { name: t('hr.earlyLate') || 'Early/Late Arrivals', score: overallHRData.earlyLate }
   ], [overallHRData, t]);
 
   return (

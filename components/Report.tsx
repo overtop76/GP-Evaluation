@@ -92,7 +92,10 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   }), [allFinals, startDate, endDate, observerFilter]);
 
   const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
-  const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
+  const hrRubric = { 
+    absences: state.hrRubric?.absences || [2, 5, 9], 
+    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
+  };
   
   const latest = finals.length ? finals[finals.length - 1] : null;
   
@@ -468,8 +471,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={[
                           { name: t('set.absences'), value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },
-                          { name: t('set.earlyLeaves'), value: teacherHRData.earlyLeaves, score: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) },
-                          { name: t('set.lateArrivals'), value: teacherHRData.lateArrivals, score: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) }
+                          { name: t('hr.earlyLate') || 'Early/Late Arrivals', value: teacherHRData.earlyLate, score: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate) }
                         ]}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
@@ -490,21 +492,16 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   </div>
 
                   <div className="card" style={{ padding: '24px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.absences')}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
                         <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubric.absences) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('absences', teacherHRData.absences, hrRubric.absences)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.earlyLeaves')}</div>
-                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLeaves}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('earlyLeaves', teacherHRData.earlyLeaves, hrRubric.earlyLeaves)}</div>
-                      </div>
-                      <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.lateArrivals')}</div>
-                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.lateArrivals}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('lateArrivals', teacherHRData.lateArrivals, hrRubric.lateArrivals)}</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('hr.earlyLate') || 'Early/Late Arrivals'}</div>
+                        <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLate}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)}</div>
                       </div>
                     </div>
                     

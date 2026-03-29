@@ -17,8 +17,14 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
   const { t } = useLanguage();
   const [editingWeights, setEditingWeights] = useState<Record<string, number[]>>({});
   const [hrWeight, setHrWeight] = useState(state.hrWeight || 5);
-  const [hrRubric, setHrRubric] = useState(state.hrRubric);
+  const [hrRubric, setHrRubric] = useState(state.hrRubric || { absences: [2, 5, 9], earlyLate: [2, 4, 7] });
   const [newSubject, setNewSubject] = useState('');
+
+  React.useEffect(() => {
+    if (state.hrRubric) {
+      setHrRubric(state.hrRubric);
+    }
+  }, [state.hrRubric]);
 
   const handleAddSubject = () => {
     const trimmed = newSubject.trim();
@@ -142,11 +148,13 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-          {(['absences', 'earlyLeaves', 'lateArrivals'] as const).map(key => (
+          {(['absences', 'earlyLate'] as const).map(key => {
+            const rubricArray = hrRubric[key] || [2, 4, 7];
+            return (
             <div key={key} style={{ background: 'var(--bg)', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--navy)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="material-icons-outlined" style={{ fontSize: '20px' }}>
-                  {key === 'absences' ? 'event_busy' : key === 'earlyLeaves' ? 'exit_to_app' : 'schedule'}
+                  {key === 'absences' ? 'event_busy' : 'schedule'}
                 </span>
                 {t(`set.${key}`)}
               </h3>
@@ -163,10 +171,10 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                       type="number" 
                       className="finput" 
                       style={{ width: '60px', textAlign: 'center', padding: '6px', fontWeight: 700 }}
-                      value={hrRubric[key][idx]} 
+                      value={rubricArray[idx]} 
                       onChange={e => {
                         const next = { ...hrRubric };
-                        next[key] = [...next[key]];
+                        next[key] = [...rubricArray];
                         next[key][idx] = parseInt(e.target.value) || 0;
                         setHrRubric(next);
                       }}
@@ -178,11 +186,11 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                     <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: '#ef4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '14px' }}>1</div>
                     <span style={{ fontSize: '13px', fontWeight: 600, color: '#991b1b' }}>{t('set.anythingAbove')}</span>
                   </div>
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#991b1b', paddingRight: '12px' }}>{hrRubric[key][2]}+</span>
+                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#991b1b', paddingRight: '12px' }}>{rubricArray[2]}+</span>
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       </div>
 

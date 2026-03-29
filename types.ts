@@ -60,16 +60,14 @@ export interface Log {
 export interface HRData {
   teacherId: string;
   absences: number;
-  earlyLeaves: number;
-  lateArrivals: number;
+  earlyLate: number;
   notes?: string;
   lastUpdated: string;
 }
 
 export interface HRRubricThresholds {
   absences: number[];
-  earlyLeaves: number[];
-  lateArrivals: number[];
+  earlyLate: number[];
 }
 
 export interface AppState {

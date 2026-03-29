@@ -113,9 +113,16 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
                             <span className="material-icons" style={{ fontSize: '16px' }}>edit</span> {t('hist.resume')}
                           </button>
                         ) : (
-                          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: e.tid, type: e.type })}>
-                            <span className="material-icons" style={{ fontSize: '16px' }}>visibility</span> {t('hist.viewReport')}
-                          </button>
+                          <>
+                            <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: e.tid, type: e.type })}>
+                              <span className="material-icons" style={{ fontSize: '16px' }}>visibility</span> {t('hist.viewReport')}
+                            </button>
+                            {(currentUser.role === 'admin' || currentUser.permissions?.canAddUser) && (
+                              <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('evaluate', { eid: e.id })}>
+                                <span className="material-icons" style={{ fontSize: '16px' }}>edit</span> {t('action.edit') || 'Edit'}
+                              </button>
+                            )}
+                          </>
                         )}
                         {(currentUser.role === 'admin' || e.oid === currentUser.id) && (
                           <button className="icon-btn" onClick={() => {

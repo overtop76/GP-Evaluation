@@ -126,7 +126,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
           <h1 className="ph-title">{t('dir.title')}</h1>
           <p className="ph-sub">{t('dir.sub')}</p>
         </div>
-        {currentUser.role === 'admin' && (
+        {(currentUser.role === 'admin' || currentUser.permissions?.canAddUser) && (
           <button className="btn btn-primary" onClick={() => openModal()}>
             <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> {t('dir.register')}
           </button>
@@ -205,7 +205,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                             <span className="material-icons-outlined" style={{ fontSize: '16px' }}>bar_chart</span> {t('action.report')}
                           </button>
                         )}
-                        {currentUser.role === 'admin' && (
+                        {(currentUser.role === 'admin' || currentUser.permissions?.canAddUser) && (
                           <>
                             <button className="icon-btn" onClick={() => openModal(tData)} title={t('action.edit') || 'Edit'}>
                               <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--blue)' }}>edit</span>

@@ -9,7 +9,10 @@ import { getHRScore } from '../utils/helpers';
 const HRAttendance: React.FC = () => {
   const { state, updateHRData, updateHRWeight } = useApp();
   const { t } = useLanguage();
-  const hrRubric = state.hrRubric || { absences: [2, 5, 9], earlyLeaves: [2, 4, 7], lateArrivals: [2, 4, 7] };
+  const hrRubric = { 
+    absences: state.hrRubric?.absences || [2, 5, 9], 
+    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
+  };
   const [editingWeight, setEditingWeight] = useState(false);
   const [weightInput, setWeightInput] = useState((state.hrWeight ?? 5).toString());
   const [search, setSearch] = useState('');
@@ -30,8 +33,7 @@ const HRAttendance: React.FC = () => {
         updateHRData({
           teacherId: t.id,
           absences: 0,
-          earlyLeaves: 0,
-          lateArrivals: 0,
+          earlyLate: 0,
           notes: '',
           lastUpdated: new Date().toISOString()
         });
@@ -46,7 +48,7 @@ const HRAttendance: React.FC = () => {
 
   const handleDataChange = (teacherId: string, field: keyof HRData, value: string) => {
     const existing = state.hrData.find(d => d.teacherId === teacherId) || {
-      teacherId, absences: 0, earlyLeaves: 0, lateArrivals: 0, lastUpdated: new Date().toISOString()
+      teacherId, absences: 0, earlyLate: 0, lastUpdated: new Date().toISOString()
     };
     
     const numValue = parseInt(value, 10) || 0;
@@ -60,28 +62,25 @@ const HRAttendance: React.FC = () => {
 
   const chartData = useMemo(() => {
     const totals = state.teachers.reduce((acc, t) => {
-      const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
+      const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLate: 0 };
       acc.absences += getHRScore('absences', data.absences, hrRubric.absences);
-      acc.earlyLeaves += getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
-      acc.lateArrivals += getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
+      acc.earlyLate += getHRScore('earlyLate', data.earlyLate, hrRubric.earlyLate);
       return acc;
-    }, { absences: 0, earlyLeaves: 0, lateArrivals: 0 });
+    }, { absences: 0, earlyLate: 0 });
 
     const count = state.teachers.length || 1;
     return [
       { name: t('hr.absences'), score: parseFloat((totals.absences / count).toFixed(2)), color: '#6366f1' },
-      { name: t('hr.earlyLeaves'), score: parseFloat((totals.earlyLeaves / count).toFixed(2)), color: '#8b5cf6' },
-      { name: t('hr.lateArrivals'), score: parseFloat((totals.lateArrivals / count).toFixed(2)), color: '#ec4899' },
+      { name: t('hr.earlyLate'), score: parseFloat((totals.earlyLate / count).toFixed(2)), color: '#8b5cf6' },
     ];
   }, [state.teachers, state.hrData, state.hrRubric, t]);
 
   const stats = useMemo(() => {
     const allData = state.teachers.map(t => {
-      const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0 };
+      const data = (state.hrData || []).find(d => d.teacherId === t.id) || { absences: 0, earlyLate: 0 };
       const s1 = getHRScore('absences', data.absences, hrRubric.absences);
-      const s2 = getHRScore('earlyLeaves', data.earlyLeaves, hrRubric.earlyLeaves);
-      const s3 = getHRScore('lateArrivals', data.lateArrivals, hrRubric.lateArrivals);
-      return (s1 + s2 + s3) / 3;
+      const s2 = getHRScore('earlyLate', data.earlyLate, hrRubric.earlyLate);
+      return (s1 + s2) / 2;
     });
     
     const total = allData.length;
@@ -201,7 +200,7 @@ const HRAttendance: React.FC = () => {
               {t('hr.scoringRubric')}
             </h3>
             <div className="space-y-5">
-              {(['absences', 'earlyLeaves', 'lateArrivals'] as const).map(key => (
+              {(['absences', 'earlyLate'] as const).map(key => (
                 <div key={key} className="flex justify-between items-center">
                   <span className="text-xs font-black text-indigo-700 capitalize">{t(`hr.${key}Rubric`)}</span>
                   <span className="text-[11px] font-mono font-bold text-indigo-500 bg-white px-3 py-1.5 rounded-xl border border-indigo-100 shadow-sm">
@@ -235,20 +234,18 @@ const HRAttendance: React.FC = () => {
             <tr className="bg-white">
               <th className="py-4 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{t('hr.employeeDetails')}</th>
               <th className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">{t('hr.absences')}</th>
-              <th className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">{t('hr.earlyLeaves')}</th>
-              <th className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">{t('hr.lateArrivals')}</th>
+              <th className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">{t('hr.earlyLate')}</th>
               <th className="py-4 px-4 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] text-center">{t('hr.finalScore')}</th>
               <th className="py-4 px-6 text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{t('hr.notesAndObs')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filteredTeachers.map(tData => {
-              const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLeaves: 0, lateArrivals: 0, notes: '' };
+              const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLate: 0, notes: '' };
               
               const s1 = getHRScore('absences', data.absences ?? 0, hrRubric.absences);
-              const s2 = getHRScore('earlyLeaves', data.earlyLeaves ?? 0, hrRubric.earlyLeaves);
-              const s3 = getHRScore('lateArrivals', data.lateArrivals ?? 0, hrRubric.lateArrivals);
-              const avg = ((s1 + s2 + s3) / 3).toFixed(2);
+              const s2 = getHRScore('earlyLate', data.earlyLate ?? 0, hrRubric.earlyLate);
+              const avg = ((s1 + s2) / 2).toFixed(2);
               
               const isReadOnly = state.currentUser?.role !== 'admin' && state.currentUser?.role !== 'hr';
 
@@ -288,8 +285,8 @@ const HRAttendance: React.FC = () => {
                       <input 
                         type="number" 
                         min="0"
-                        value={(data.earlyLeaves ?? 0).toString()} 
-                        onChange={e => handleDataChange(tData.id, 'earlyLeaves', e.target.value)}
+                        value={(data.earlyLate ?? 0).toString()} 
+                        onChange={e => handleDataChange(tData.id, 'earlyLate', e.target.value)}
                         disabled={isReadOnly}
                         className="w-16 px-0 py-2 bg-slate-50 border-none rounded-xl text-center font-black text-slate-700 text-base focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all disabled:opacity-50"
                       />
@@ -298,23 +295,6 @@ const HRAttendance: React.FC = () => {
                         color: s2 >= 3 ? '#10b981' : s2 === 2 ? '#f59e0b' : '#f43f5e',
                         border: `1px solid ${s2 >= 3 ? '#10b98120' : s2 === 2 ? '#f59e0b20' : '#f43f5e20'}`
                       }}>{t('hr.score').replace('{score}', s2.toString())}</div>
-                    </div>
-                  </td>
-                  <td className="py-6 px-4 text-center">
-                    <div className="inline-block">
-                      <input 
-                        type="number" 
-                        min="0"
-                        value={(data.lateArrivals ?? 0).toString()} 
-                        onChange={e => handleDataChange(tData.id, 'lateArrivals', e.target.value)}
-                        disabled={isReadOnly}
-                        className="w-16 px-0 py-2 bg-slate-50 border-none rounded-xl text-center font-black text-slate-700 text-base focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all disabled:opacity-50"
-                      />
-                      <div className="text-[9px] font-black mt-2 px-2 py-0.5 rounded-full inline-block" style={{ 
-                        backgroundColor: s3 >= 3 ? '#ecfdf5' : s3 === 2 ? '#fffbeb' : '#fef2f2',
-                        color: s3 >= 3 ? '#10b981' : s3 === 2 ? '#f59e0b' : '#f43f5e',
-                        border: `1px solid ${s3 >= 3 ? '#10b98120' : s3 === 2 ? '#f59e0b20' : '#f43f5e20'}`
-                      }}>{t('hr.score').replace('{score}', s3.toString())}</div>
                     </div>
                   </td>
                   <td className="py-6 px-4 text-center">
