@@ -36,6 +36,7 @@ interface AppContextType {
   login: (user: Observer) => void;
   logout: () => void;
   addTeacher: (t: Teacher) => void;
+  updateTeacher: (t: Teacher) => void;
   deleteTeacher: (id: string) => void;
   saveEvaluation: (ev: Evaluation) => void;
   deleteEvaluation: (id: string) => void;
@@ -198,6 +199,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }).catch(console.error);
   };
 
+  const updateTeacher = (t: Teacher) => {
+    setDoc(doc(db, 'teachers', t.id), t).then(() => {
+      addLog('UPDATE_FACULTY', `Updated: ${t.fullName}`, 'UPDATE');
+      showToast(`${t.fullName} updated.`, 'success');
+    }).catch(console.error);
+  };
+
   const deleteTeacher = (id: string) => {
     const t = state.teachers.find(x => x.id === id);
     if (t) {
@@ -318,6 +326,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     login,
     logout,
     addTeacher,
+    updateTeacher,
     deleteTeacher,
     saveEvaluation,
     deleteEvaluation,

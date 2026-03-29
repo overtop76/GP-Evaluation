@@ -14,7 +14,7 @@ import HRAttendance from './components/HRAttendance';
 import EvaluationHistory from './components/EvaluationHistory';
 
 const AppContent: React.FC = () => {
-  const { state, login, logout, addTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, updateCustomSubjects, toasts } = useApp();
+  const { state, login, logout, addTeacher, updateTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, updateCustomSubjects, toasts } = useApp();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [evalParams, setEvalParams] = useState<any>({});
 
@@ -103,6 +103,7 @@ const AppContent: React.FC = () => {
           hrRubric={state.hrRubric}
           currentUser={state.currentUser!}
           onAddTeacher={addTeacher} 
+          onUpdateTeacher={updateTeacher}
           onDeleteTeacher={deleteTeacher} 
           onNavigate={handleNavigate} 
         />;

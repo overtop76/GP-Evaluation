@@ -14,14 +14,16 @@ interface TeacherDirectoryProps {
   hrRubric?: any;
   currentUser: Observer;
   onAddTeacher: (t: Teacher) => void;
+  onUpdateTeacher: (t: Teacher) => void;
   onDeleteTeacher: (id: string) => void;
   onNavigate: (page: string, params?: any) => void;
 }
 
-const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, customSubjects, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onDeleteTeacher, onNavigate }) => {
+const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluations, customWeights, customSubjects, hrData, hrWeight, hrRubric, currentUser, onAddTeacher, onUpdateTeacher, onDeleteTeacher, onNavigate }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   
   // New Teacher Form State
   const [newName, setNewName] = useState('');
@@ -55,20 +57,57 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
       alert(t('dir.alertComplete'));
       return;
     }
-    // Check if employee ID is unique
-    if (teachers.some(tData => tData.employeeId === newEmployeeId)) {
+    // Check if employee ID is unique (only if adding new or changing ID)
+    if ((!editingTeacher || editingTeacher.employeeId !== newEmployeeId) && teachers.some(tData => tData.employeeId === newEmployeeId)) {
       alert(t('dir.alertUnique'));
       return;
     }
-    onAddTeacher({
-      id: Date.now().toString(36),
-      employeeId: newEmployeeId,
-      fullName: newName,
-      subject: newSubject,
-      role: newRole,
-      division: newDivs.join(', ')
-    });
+
+    if (editingTeacher) {
+      onUpdateTeacher({
+        ...editingTeacher,
+        employeeId: newEmployeeId,
+        fullName: newName,
+        subject: newSubject,
+        role: newRole,
+        division: newDivs.join(', ')
+      });
+    } else {
+      onAddTeacher({
+        id: Date.now().toString(36),
+        employeeId: newEmployeeId,
+        fullName: newName,
+        subject: newSubject,
+        role: newRole,
+        division: newDivs.join(', ')
+      });
+    }
+    
+    closeModal();
+  };
+
+  const openModal = (teacher?: Teacher) => {
+    if (teacher) {
+      setEditingTeacher(teacher);
+      setNewName(teacher.fullName);
+      setNewEmployeeId(teacher.employeeId || '');
+      setNewSubject(teacher.subject);
+      setNewRole(teacher.role);
+      setNewDivs(teacher.division.split(', ').filter(Boolean));
+    } else {
+      setEditingTeacher(null);
+      setNewName('');
+      setNewEmployeeId('');
+      setNewSubject('');
+      setNewRole('');
+      setNewDivs([]);
+    }
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
     setShowModal(false);
+    setEditingTeacher(null);
     setNewName('');
     setNewEmployeeId('');
     setNewSubject('');
@@ -88,7 +127,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
           <p className="ph-sub">{t('dir.sub')}</p>
         </div>
         {currentUser.role === 'admin' && (
-          <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+          <button className="btn btn-primary" onClick={() => openModal()}>
             <span className="material-icons" style={{ fontSize: '17px' }}>person_add</span> {t('dir.register')}
           </button>
         )}
@@ -167,13 +206,18 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                           </button>
                         )}
                         {currentUser.role === 'admin' && (
-                          <button className="icon-btn" onClick={() => {
-                            if (window.confirm(t('dir.confirmDelete') || 'Are you sure you want to delete this teacher?')) {
-                              onDeleteTeacher(tData.id);
-                            }
-                          }} title={t('action.delete')}>
-                            <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
-                          </button>
+                          <>
+                            <button className="icon-btn" onClick={() => openModal(tData)} title={t('action.edit') || 'Edit'}>
+                              <span className="material-icons-outlined" style={{ fontSize: '18px', color: 'var(--blue)' }}>edit</span>
+                            </button>
+                            <button className="icon-btn" onClick={() => {
+                              if (window.confirm(t('dir.confirmDelete') || 'Are you sure you want to delete this teacher?')) {
+                                onDeleteTeacher(tData.id);
+                              }
+                            }} title={t('action.delete')}>
+                              <span className="material-icons-outlined" style={{ fontSize: '18px', color: '#ef4444' }}>delete_outline</span>
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>
@@ -195,9 +239,11 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
       </div>
 
       {showModal && (
-        <div className="overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
+        <div className="overlay" onClick={(e) => e.target === e.currentTarget && closeModal()}>
           <div className="mbox">
-            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>{t('dir.register')}</h2>
+            <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '26px', fontWeight: 900, color: 'var(--navy)', marginBottom: '22px' }}>
+              {editingTeacher ? (t('action.edit') || 'Edit Faculty') : t('dir.register')}
+            </h2>
             <div className="g2">
               <div className="field">
                 <label className="flabel">{t('dir.name')}</label>
@@ -242,7 +288,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '16px' }}>
-              <button className="btn btn-ghost" onClick={() => setShowModal(false)}>{t('action.cancel')}</button>
+              <button className="btn btn-ghost" onClick={closeModal}>{t('action.cancel')}</button>
               <button className="btn btn-primary" onClick={handleAdd}>
                 <span className="material-icons" style={{ fontSize: '16px' }}>check</span> {t('action.save')}
               </button>
