@@ -4,6 +4,7 @@ import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF, SUBJECTS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
 import UserPermissions from './UserPermissions';
+import DataExport from './DataExport';
 
 interface SettingsProps {
   state: AppState;
@@ -299,6 +300,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
       </div>
 
       <UserPermissions observers={state.observers} />
+      <DataExport state={state} />
 
       <div className="card-xl" style={{ padding: '24px', border: '1px solid #fecaca', background: '#fff1f2' }}>
         <div className="frow" style={{ gap: '16px', alignItems: 'flex-start' }}>

@@ -34,61 +34,59 @@ const AppContent: React.FC = () => {
     </div>
   );
 
-  if (!state.currentUser) {
-    return <Login observers={state.observers} onLogin={login} onRegister={addUser} />;
-  }
-
-  // HR users see only the HR Attendance page
-  if (state.currentUser.role === 'hr') {
-    return (
-      <div id="app-wrap" className="on">
-        <Sidebar 
-          activeTab="hr" 
-          setActiveTab={() => {}} 
-          userRole={state.currentUser.role} 
-          userName={state.currentUser.name}
-          currentUser={state.currentUser}
-          onLogout={logout}
-        />
-        <div id="main">
-          <HRAttendance />
-        </div>
-        {renderToasts()}
-      </div>
-    );
-  }
-
-  // Teacher users see their own dashboard and reports
-  if (state.currentUser.role === 'teacher') {
-    const teacher = state.teachers.find(t => t.employeeId === state.currentUser?.employeeId);
-    return (
-      <div id="app-wrap" className="on">
-        <Sidebar 
-          activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
-          userRole={state.currentUser.role} 
-          userName={state.currentUser.name}
-          currentUser={state.currentUser}
-          onLogout={logout}
-        />
-        <div id="main">
-          {activeTab === 'dashboard' ? (
-            <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={() => {}} />
-          ) : (
-            <Report 
-              teacherId={teacher?.id} 
-              type="gp" 
-              state={state} 
-              onBack={() => setActiveTab('dashboard')} 
-            />
-          )}
-        </div>
-        {renderToasts()}
-      </div>
-    );
-  }
-
   const renderContent = () => {
+    if (!state.currentUser) {
+      return <Login observers={state.observers} onLogin={login} onRegister={addUser} />;
+    }
+
+    if (state.currentUser.role === 'hr') {
+      return (
+        <div id="app-wrap" className="on">
+          <Sidebar 
+            activeTab="hr" 
+            setActiveTab={() => {}} 
+            userRole={state.currentUser.role} 
+            userName={state.currentUser.name}
+            currentUser={state.currentUser}
+            onLogout={logout}
+          />
+          <div id="main">
+            <HRAttendance />
+          </div>
+          {renderToasts()}
+        </div>
+      );
+    }
+
+    if (state.currentUser.role === 'teacher') {
+      const teacher = state.teachers.find(t => t.employeeId === state.currentUser?.employeeId);
+      return (
+        <div id="app-wrap" className="on">
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={setActiveTab} 
+            userRole={state.currentUser.role} 
+            userName={state.currentUser.name}
+            currentUser={state.currentUser}
+            onLogout={logout}
+          />
+          <div id="main">
+            {activeTab === 'dashboard' ? (
+              <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={() => {}} />
+            ) : (
+              <Report 
+                teacherId={teacher?.id} 
+                type="gp" 
+                state={state} 
+                onBack={() => setActiveTab('dashboard')} 
+              />
+            )}
+          </div>
+          {renderToasts()}
+        </div>
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
         return <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={deleteEvaluation} />;
@@ -168,14 +166,16 @@ const AppContent: React.FC = () => {
 
   return (
     <div id="app-wrap" className="on">
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={setActiveTab} 
-        userRole={state.currentUser!.role} 
-        userName={state.currentUser!.name}
-        currentUser={state.currentUser!}
-        onLogout={logout}
-      />
+      {state.currentUser && state.currentUser.role !== 'hr' && state.currentUser.role !== 'teacher' && (
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          userRole={state.currentUser!.role} 
+          userName={state.currentUser!.name}
+          currentUser={state.currentUser!}
+          onLogout={logout}
+        />
+      )}
       <div id="main">
         {renderContent()}
       </div>
