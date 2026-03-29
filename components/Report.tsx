@@ -467,7 +467,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '16px' }}>{t('rep.hrTitle')}</h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1">
                   <div className="card" style={{ padding: '24px' }}>
-                    <div style={{ height: '200px' }}>
+                    <div style={{ height: '200px' }} className="print-chart-container">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={[
                           { name: t('set.absences'), value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },

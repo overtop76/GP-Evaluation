@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Teacher, Evaluation, HRData, Observer } from '../types';
-import { computeScore, getRating, ini } from '../utils/helpers';
+import { computeScore, getRating, ini, getHRScore } from '../utils/helpers';
 import { SUBJECTS, ROLES, DIVS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
@@ -161,7 +161,9 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                 <th>{t('dir.role')}</th>
                 <th>{t('dir.subject')}</th>
                 <th>{t('dir.division')}</th>
+                <th>{t('dir.lastEval')}</th>
                 <th>{t('dir.perf')}</th>
+                <th>{t('dir.attendance')}</th>
                 <th style={{ textAlign: 'right', paddingRight: '24px' }}>{t('dash.actions')}</th>
               </tr>
             </thead>
@@ -185,18 +187,26 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                     <td><span style={{ background: 'var(--bg)', color: 'var(--slate-dark)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', padding: '4px 10px', borderRadius: '8px' }}>{tData.role}</span></td>
                     <td style={{ color: 'var(--slate)', fontWeight: 500, fontSize: '13.5px' }}>{tData.subject}</td>
                     <td><span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#1d4ed8', fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '4px 10px', borderRadius: '20px' }}>{tData.division}</span></td>
+                    <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{evals.length ? evals.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date : '—'}</span></td>
                     <td>
                       {avg != null && r ? (
                         <div className="frow" style={{ gap: '10px' }}>
                           <span style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: r.color }}>{avg.toFixed(2)}</span>
-                          <div>
-                            <span className={`badge ${r.css}`} style={{ fontSize: '10px' }}>{t(`lvl.${r.level}`) || r.label}</span>
-                            <div style={{ fontSize: '10px', color: 'var(--slate)', marginTop: '2px' }}>{evals.length} {t('dash.evals')}</div>
-                          </div>
                         </div>
                       ) : (
-                        <span style={{ fontSize: '12px', color: '#d1d5db', fontStyle: 'italic' }}>{t('dash.notEvaluated')}</span>
+                        <span style={{ fontSize: '12px', color: '#d1d5db', fontStyle: 'italic' }}>—</span>
                       )}
+                    </td>
+                    <td>
+                      {(() => {
+                        const teacherHRData = hrData?.find(h => h.teacherId === tData.id);
+                        const score = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric.absences) + getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)) / 2 : null;
+                        return score != null ? (
+                          <span style={{ fontSize: '14px', fontWeight: 700, color: score >= 3 ? '#10b981' : '#f43f5e' }}>{score.toFixed(2)}</span>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#d1d5db', fontStyle: 'italic' }}>—</span>
+                        );
+                      })()}
                     </td>
                     <td style={{ textAlign: 'right', paddingRight: '24px' }}>
                       <div className="frow" style={{ gap: '8px', justifyContent: 'flex-end' }}>

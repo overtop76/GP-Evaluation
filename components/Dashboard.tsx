@@ -63,12 +63,26 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, state.hrRubric);
   }, 0) / finals.length : 0, [finals, state.hrData, state.customWeights, state.hrWeight, state.hrRubric]);
 
+  const hrRubric = {
+    absences: state.hrRubric?.absences || [2, 5, 9],
+    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7]
+  };
+
   const metrics = React.useMemo(() => [
     { lbl: currentUser?.role === 'teacher' ? t('dash.myProfile') : t('dash.facultyMembers'), val: allowedTeachers.length, ico: 'people', col: '#2563eb' },
     { lbl: currentUser?.role === 'teacher' ? t('dash.myEvals') : t('dash.completedEvals'), val: finals.length, ico: 'assignment_turned_in', col: '#10b981' },
     { lbl: currentUser?.role === 'teacher' ? t('dash.myAverage') : t('dash.systemAverage'), val: finals.length ? avg.toFixed(2) : '—', ico: 'trending_up', col: '#7c3aed', sub: finals.length ? t(`lvl.${getRating(avg).level}`) || getRating(avg).label : t('dash.noData') },
-    { lbl: currentUser?.role === 'teacher' ? t('dash.pending') : t('dash.openDrafts'), val: drafts.length, ico: 'edit_note', col: '#f59e0b' }
-  ], [currentUser?.role, allowedTeachers.length, finals.length, avg, drafts.length, t]);
+    { lbl: t('dash.needsAttention'), val: allowedTeachers.filter(tData => {
+        const evals = finals.filter(e => e.tid === tData.id);
+        const avg = evals.length ? evals.reduce((a, e) => {
+          const teacherHRData = state.hrData?.find(h => h.teacherId === e.tid);
+          return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric);
+        }, 0) / evals.length : null;
+        const teacherHRData = state.hrData?.find(h => h.teacherId === tData.id);
+        const attendanceScore = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric.absences) + getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)) / 2 : null;
+        return (avg != null && avg < 2.5) || (attendanceScore != null && attendanceScore < 2.5);
+    }).length, ico: 'warning', col: '#ef4444' }
+  ], [currentUser?.role, allowedTeachers, finals, avg, state.hrData, state.customWeights, state.hrWeight, hrRubric, t]);
 
   const recentEvals = React.useMemo(() => [...finals].reverse().slice(0, 6), [finals]);
 
@@ -83,11 +97,6 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
         type: t(`type.${e.type}`) || TYPE_LABELS[e.type]
       };
     }), [finals, state.hrData, state.customWeights, state.hrWeight, state.hrRubric, t]);
-
-  const hrRubric = { 
-    absences: state.hrRubric?.absences || [2, 5, 9], 
-    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
-  };
 
   const ratingCounts = React.useMemo(() => {
     const counts = { 4: 0, 3: 0, 2: 0, 1: 0 };

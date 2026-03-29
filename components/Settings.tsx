@@ -3,6 +3,7 @@ import { AppState } from '../types';
 import { TYPE_LABELS, TYPE_COLORS, RUBRIC_DEF, SUBJECTS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
+import UserPermissions from './UserPermissions';
 
 interface SettingsProps {
   state: AppState;
@@ -296,6 +297,8 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
           })}
         </div>
       </div>
+
+      <UserPermissions observers={state.observers} />
 
       <div className="card-xl" style={{ padding: '24px', border: '1px solid #fecaca', background: '#fff1f2' }}>
         <div className="frow" style={{ gap: '16px', alignItems: 'flex-start' }}>

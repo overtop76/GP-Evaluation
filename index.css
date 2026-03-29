@@ -360,6 +360,10 @@
     max-width: none !important;
     animation: none !important;
   }
+  .print-chart-container {
+    height: 200px !important;
+    width: 100% !important;
+  }
   .card, .card-xl {
     box-shadow: none !important;
     border: 1px solid #eee !important;
