@@ -15,10 +15,30 @@ const DataExport: React.FC<DataExportProps> = ({ state }) => {
     );
   };
 
+  const exportToJson = () => {
+    const dataToExport: any = {};
+    if (selectedData.includes('teachers')) dataToExport.teachers = state.teachers;
+    if (selectedData.includes('evaluations')) dataToExport.evaluations = state.evaluations;
+    if (selectedData.includes('observers')) dataToExport.observers = state.observers;
+    if (selectedData.includes('hrData')) dataToExport.hrData = state.hrData;
+    if (selectedData.includes('logs')) dataToExport.logs = state.logs;
+
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'EvaluationData.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="card-xl" style={{ padding: '32px', marginBottom: '32px' }}>
       <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '28px', fontWeight: 900, color: 'var(--navy)', marginBottom: '8px' }}>Data Export</h2>
-      <p style={{ fontSize: '15px', color: 'var(--slate)', marginBottom: '24px' }}>Select data to export to Excel.</p>
+      <p style={{ fontSize: '15px', color: 'var(--slate)', marginBottom: '24px' }}>Select data to export to Excel or JSON.</p>
       
       <div style={{ display: 'flex', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
         {['teachers', 'evaluations', 'observers', 'hrData', 'logs'].map(data => (
@@ -33,14 +53,24 @@ const DataExport: React.FC<DataExportProps> = ({ state }) => {
         ))}
       </div>
 
-      <button 
-        className="btn btn-primary" 
-        style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800, letterSpacing: '0.05em' }}
-        onClick={() => exportToExcel(state, selectedData)}
-        disabled={selectedData.length === 0}
-      >
-        Export to Excel
-      </button>
+      <div style={{ display: 'flex', gap: '12px' }}>
+        <button 
+          className="btn btn-primary" 
+          style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800, letterSpacing: '0.05em' }}
+          onClick={() => exportToExcel(state, selectedData)}
+          disabled={selectedData.length === 0}
+        >
+          Export to Excel
+        </button>
+        <button 
+          className="btn btn-ghost" 
+          style={{ padding: '12px 24px', borderRadius: '12px', fontWeight: 800, letterSpacing: '0.05em', border: '1px solid var(--border)' }}
+          onClick={exportToJson}
+          disabled={selectedData.length === 0}
+        >
+          Export to JSON
+        </button>
+      </div>
     </div>
   );
 };

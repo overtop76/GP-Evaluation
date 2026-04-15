@@ -8,13 +8,15 @@ import { useApp } from '../context/AppContext';
 interface UserManagementProps {
   observers: Observer[];
   currentUser: Observer;
+  customSubjects?: string[];
   onAddUser: (user: Observer) => void;
   onDeleteUser: (id: string) => void;
   onUpdateUser?: (user: Observer) => void;
 }
 
-const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, onAddUser, onDeleteUser, onUpdateUser }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser, customSubjects = [], onAddUser, onDeleteUser, onUpdateUser }) => {
   const { t } = useLanguage();
+
   const { showToast } = useApp();
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Observer | null>(null);
@@ -384,7 +386,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   <div className="field">
                     <label className="flabel">{t('user.allowedSubjects')}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {SUBJECTS.map(sub => (
+                      {[...SUBJECTS, ...customSubjects].map(sub => (
                         <label key={sub} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <input 
                             type="checkbox" 

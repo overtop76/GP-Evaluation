@@ -305,12 +305,12 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 {isCollective ? t('rep.obsComparison') : t('rep.domainProfile')}
               </h2>
               <div className={`grid gap-8 items-start ${isCollective && observersInReport.length > 1 ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2 print:grid-cols-1'}`}>
-                <div style={{ height: Math.max(350, ds.length * 45), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }} className="print-break-inside-avoid">
+                <div style={{ height: Math.max(400, ds.length * Math.max(45, observersInReport.length * 25)), background: '#fff', padding: '20px', borderRadius: '16px', border: '1px solid var(--border)' }} className="print-break-inside-avoid">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={comparisonData} margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
+                    <BarChart layout="vertical" data={comparisonData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                       <XAxis type="number" domain={[0, 4]} tick={{ fontSize: 10, fontWeight: 700 }} />
-                      <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 10, fontWeight: 700, fill: 'var(--slate-dark)' }} />
+                      <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate-dark)' }} />
                       <Tooltip 
                         cursor={{ fill: 'var(--bg)' }}
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
@@ -322,7 +322,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                           dataKey={obs.name} 
                           fill={CHART_COLORS[i % CHART_COLORS.length]} 
                           radius={[0, 4, 4, 0]} 
-                          barSize={observersInReport.length > 1 ? undefined : 24}
+                          barSize={observersInReport.length > 1 ? 16 : 24}
                         />
                       ))}
                     </BarChart>
@@ -357,17 +357,17 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start page-break print:grid-cols-1">
               <div className="lg:col-span-2 print:col-span-1 print-break-inside-avoid">
                 <h2 style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)', marginBottom: '20px' }}>{t('rep.perfByDomain')}</h2>
-                <div style={{ height: Math.max(240, ds.length * 50 + 40) }}>
+                <div style={{ height: Math.max(300, ds.length * 55 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart layout="vertical" data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart layout="vertical" data={chartData} margin={{ top: 5, right: 30, left: 10, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                       <XAxis type="number" domain={[0, 4]} hide />
-                      <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 12, fontWeight: 600, fontFamily: 'Barlow', fill: 'var(--slate-dark)' }} />
+                      <YAxis type="category" dataKey="name" width={180} tick={{ fontSize: 12, fontWeight: 600, fontFamily: 'Barlow', fill: 'var(--slate-dark)' }} />
                       <Tooltip 
                         cursor={{ fill: 'var(--bg)' }} 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                       />
-                      <Bar dataKey="avg" barSize={24} radius={[0, 6, 6, 0]} onClick={(data) => setSelectedDomain(data.full)} style={{ cursor: 'pointer' }}>
+                      <Bar dataKey="avg" barSize={28} radius={[0, 6, 6, 0]} onClick={(data) => setSelectedDomain(data.full)} style={{ cursor: 'pointer' }}>
                         {chartData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={getColor(entry.avg)} style={{ cursor: 'pointer', opacity: selectedDomain === entry.full ? 1 : selectedDomain ? 0.5 : 1, transition: 'opacity 0.2s' }} />
                         ))}

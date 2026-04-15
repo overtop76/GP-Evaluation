@@ -141,6 +141,7 @@ const AppContent: React.FC = () => {
         return <UserManagement 
           observers={state.observers} 
           currentUser={state.currentUser!} 
+          customSubjects={state.customSubjects}
           onAddUser={addUser} 
           onUpdateUser={updateUser}
           onDeleteUser={deleteUser} 
