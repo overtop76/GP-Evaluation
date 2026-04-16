@@ -10,12 +10,20 @@ export const exportToExcel = (state: AppState, selectedData: string[]) => {
   }
 
   if (selectedData.includes('evaluations')) {
-    const ws = XLSX.utils.json_to_sheet(state.evaluations);
+    const formattedEvaluations = state.evaluations.map(ev => ({
+      ...ev,
+      scores: ev.scores ? JSON.stringify(ev.scores) : '[]'
+    }));
+    const ws = XLSX.utils.json_to_sheet(formattedEvaluations);
     XLSX.utils.book_append_sheet(wb, ws, 'Evaluations');
   }
 
   if (selectedData.includes('observers')) {
-    const ws = XLSX.utils.json_to_sheet(state.observers);
+    const formattedObservers = state.observers.map(obs => ({
+      ...obs,
+      permissions: obs.permissions ? JSON.stringify(obs.permissions) : '{}'
+    }));
+    const ws = XLSX.utils.json_to_sheet(formattedObservers);
     XLSX.utils.book_append_sheet(wb, ws, 'Observers');
   }
 
