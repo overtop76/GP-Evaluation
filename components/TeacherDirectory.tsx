@@ -154,12 +154,17 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
             </thead>
             <tbody>
               {filteredTeachers.length > 0 ? filteredTeachers.map(tData => {
-                const evals = evaluations.filter(e => e.tid === tData.id && !e.draft && canObserverViewEvaluation(currentUser, e, tData));
-                const avg = evals.length ? evals.reduce((a, e) => {
+                const allFinalEvals = evaluations.filter(e => e.tid === tData.id && !e.draft);
+                const avg = allFinalEvals.length ? allFinalEvals.reduce((a, e) => {
                   const teacherHRData = hrData?.find(h => h.teacherId === e.tid);
                   return a + computeScore(e, customWeights, teacherHRData, hrWeight, hrRubric);
-                }, 0) / evals.length : null;
+                }, 0) / allFinalEvals.length : null;
                 const r = avg != null ? getRating(avg) : null;
+                
+                // Still restrict the latest date to what they can actually view for the column
+                const visibleEvals = allFinalEvals.filter(e => canObserverViewEvaluation(currentUser, e, tData));
+                const latestVisible = visibleEvals.length > 0 ? visibleEvals.sort((a,b) => b.date.localeCompare(a.date))[0] : null;
+
                 return (
                   <tr key={tData.id}>
                     <td style={{ paddingLeft: '24px' }}>
@@ -172,7 +177,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                     <td><span style={{ background: 'var(--bg)', color: 'var(--slate-dark)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.06em', padding: '4px 10px', borderRadius: '8px' }}>{tData.role}</span></td>
                     <td style={{ color: 'var(--slate)', fontWeight: 500, fontSize: '13.5px' }}>{tData.subject}</td>
                     <td><span style={{ background: 'rgba(37, 99, 235, 0.1)', color: '#1d4ed8', fontSize: '10.5px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em', padding: '4px 10px', borderRadius: '20px' }}>{tData.division}</span></td>
-                    <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{evals.length ? evals.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0].date : '—'}</span></td>
+                    <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{latestVisible ? latestVisible.date : '—'}</span></td>
                     <td>
                       {avg != null && r ? (
                         <div className="frow" style={{ gap: '10px' }}>

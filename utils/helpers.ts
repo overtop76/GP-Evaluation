@@ -54,8 +54,15 @@ export const canObserverViewEvaluation = (observer: Observer | null | undefined,
   if (observer.role === 'admin') return true;
   if (observer.role === 'teacher') return teacher?.employeeId === observer.employeeId;
 
-  if (evaluation.oid === observer.id) return true;
+  const isAuthor = evaluation.oid === observer.id;
 
+  // Always allow an observer to view an evaluation they authored themselves (unless they can't even view the teacher)
+  if (isAuthor) {
+    if (teacher && !canObserverViewTeacher(observer, teacher)) return false;
+    return true;
+  }
+
+  // If the observer did NOT author the evaluation:
   if (teacher && !canObserverViewTeacher(observer, teacher)) {
     return false;
   }
@@ -65,7 +72,8 @@ export const canObserverViewEvaluation = (observer: Observer | null | undefined,
 
   if (p.viewScopes.includes('all')) return true;
 
-  if (p.viewScopes.includes('own') && !p.viewScopes.includes('stage') && !p.viewScopes.includes('subject')) {
+  // If the observer checked "Only Own Observations", they cannot view others' evaluations.
+  if (p.viewScopes.includes('own') && !isAuthor) {
     return false;
   }
   
