@@ -22,16 +22,17 @@ export const canObserverViewTeacher = (observer: Observer | null | undefined, te
   let match = true;
   
   if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
-    if (!p.allowedStages.includes(teacher.division)) match = false;
+    const teacherDivs = teacher.division.split(',').map(d => d.trim().toLowerCase());
+    const allowed = p.allowedStages.map(s => s.trim().toLowerCase());
+    const hasIntersection = teacherDivs.some(d => allowed.includes(d));
+    if (!hasIntersection) match = false;
   }
   
   if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
-    const hasEarlyElemStage = p.viewScopes.includes('stage') && p.allowedStages?.some(s => s === 'Early Years' || s === 'Elementary');
-    const isHomeroomImplicit = teacher.subject === 'Homeroom' && hasEarlyElemStage;
-    
-    if (!isHomeroomImplicit && !p.allowedSubjects.includes(teacher.subject)) {
-      match = false;
-    }
+    const teacherSubs = teacher.subject.split(',').map(s => s.trim().toLowerCase());
+    const allowed = p.allowedSubjects.map(s => s.trim().toLowerCase());
+    const hasIntersection = teacherSubs.some(s => allowed.includes(s));
+    if (!hasIntersection) match = false;
   }
 
   if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && p.viewScopes.includes('own')) {
