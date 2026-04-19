@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Teacher, Evaluation, HRData, Observer } from '../types';
-import { computeScore, getRating, ini, getHRScore } from '../utils/helpers';
+import { computeScore, getRating, ini, getHRScore, canObserverViewTeacher, canObserverViewEvaluation } from '../utils/helpers';
 import { SUBJECTS, ROLES, DIVS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
@@ -36,22 +36,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
   const [newDivs, setNewDivs] = useState<string[]>([]);
 
   // Filter based on permissions
-  const allowedTeachers = React.useMemo(() => teachers.filter(tData => {
-    if (currentUser?.role === 'admin') return true;
-    if (!currentUser?.permissions) return true;
-    
-    const p = currentUser.permissions;
-    if (p.viewScopes.includes('all')) return true;
-    
-    let match = true;
-    if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
-      if (!p.allowedStages.includes(tData.division)) match = false;
-    }
-    if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
-      if (!p.allowedSubjects.includes(tData.subject)) match = false;
-    }
-    return match;
-  }), [teachers, currentUser]);
+  const allowedTeachers = React.useMemo(() => teachers.filter(tData => canObserverViewTeacher(currentUser, tData)), [teachers, currentUser]);
 
   const filteredTeachers = React.useMemo(() => allowedTeachers.filter(tData => tData.fullName.toLowerCase().includes(search.toLowerCase())), [allowedTeachers, search]);
 
@@ -169,7 +154,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
             </thead>
             <tbody>
               {filteredTeachers.length > 0 ? filteredTeachers.map(tData => {
-                const evals = evaluations.filter(e => e.tid === tData.id && !e.draft);
+                const evals = evaluations.filter(e => e.tid === tData.id && !e.draft && canObserverViewEvaluation(currentUser, e, tData));
                 const avg = evals.length ? evals.reduce((a, e) => {
                   const teacherHRData = hrData?.find(h => h.teacherId === e.tid);
                   return a + computeScore(e, customWeights, teacherHRData, hrWeight, hrRubric);

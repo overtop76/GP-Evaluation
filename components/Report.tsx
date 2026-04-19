@@ -1,6 +1,6 @@
 import React from 'react';
 import { Teacher, Observer, Evaluation, AppState } from '../types';
-import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore } from '../utils/helpers';
+import { computeScore, getRating, getDomainScores, ini, fmtD, getRubric, getHRScore, canObserverViewEvaluation } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
@@ -23,21 +23,17 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const [selectedDomain, setSelectedDomain] = React.useState<string | null>(null);
   
   const teacher = state.teachers.find(t => t.id === teacherId);
+
+  const allFinals = React.useMemo(() => {
+    if (!teacher) return [];
+    return state.evaluations.filter(e => {
+      if (e.tid !== teacherId || e.type !== currentType || e.draft) return false;
+      return canObserverViewEvaluation(state.currentUser, e, teacher);
+    });
+  }, [state.evaluations, teacherId, currentType, state.currentUser, teacher]);
+
   if (!teacher) return <div className="page"><div className="empty"><span className="material-icons mi">error_outline</span><p>Teacher not found.</p></div></div>;
 
-  const allFinals = React.useMemo(() => state.evaluations.filter(e => {
-    if (e.tid !== teacherId || e.type !== currentType || e.draft) return false;
-    
-    // Check permissions
-    if (state.currentUser?.role === 'admin') return true;
-    if (!state.currentUser?.permissions) return true;
-    
-    const p = state.currentUser.permissions;
-    if (p.viewScopes.includes('all')) return true;
-    if (p.viewScopes.includes('own') && e.oid !== state.currentUser.id) return false;
-    
-    return true;
-  }), [state.evaluations, teacherId, currentType, state.currentUser]);
   
   if (!allFinals.length) {
     return (
@@ -248,7 +244,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
         <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '160px' }}>
           <input type="date" className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={endDate} onChange={e => setEndDate(e.target.value)} />
         </div>
-        {(!state.currentUser?.permissions || !state.currentUser.permissions.viewScopes.includes('own')) && (
+        {(state.currentUser?.role === 'admin' || !state.currentUser?.permissions || state.currentUser.permissions.viewScopes.some(s => s !== 'own')) && (
           <div className="field" style={{ marginBottom: 0, flex: 1, minWidth: '200px' }}>
             <select className="finput" style={{ padding: '10px 14px', fontSize: '13px' }} value={observerFilter} onChange={e => setObserverFilter(e.target.value)}>
               <option value="">{t('rep.allObservers')}</option>

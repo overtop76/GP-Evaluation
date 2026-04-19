@@ -1,5 +1,68 @@
-import { Evaluation, Domain } from '../types';
+import { Evaluation, Domain, Observer, Teacher } from '../types';
 import { RUBRIC_DEF, LEVEL_COLORS } from '../constants';
+
+export const canObserverViewTeacher = (observer: Observer | null | undefined, teacher: Teacher): boolean => {
+  if (!observer) return false;
+
+  const isSelf = (teacher.employeeId && observer.employeeId && teacher.employeeId === observer.employeeId) || 
+                 (teacher.fullName.toLowerCase().trim() === observer.name.toLowerCase().trim());
+  
+  // Exclude self-evaluations for observers (but let generic teachers see their own profile)
+  if (isSelf && observer.role !== 'teacher') return false;
+
+  if (observer.role === 'admin') return true;
+  // Teachers can strictly ONLY see themselves
+  if (observer.role === 'teacher') return isSelf;
+
+  const p = observer.permissions;
+  if (!p) return true;
+
+  if (p.viewScopes.includes('all')) return true;
+
+  let match = true;
+  
+  if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
+    if (!p.allowedStages.includes(teacher.division)) match = false;
+  }
+  
+  if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
+    const hasEarlyElemStage = p.viewScopes.includes('stage') && p.allowedStages?.some(s => s === 'Early Years' || s === 'Elementary');
+    const isHomeroomImplicit = teacher.subject === 'Homeroom' && hasEarlyElemStage;
+    
+    if (!isHomeroomImplicit && !p.allowedSubjects.includes(teacher.subject)) {
+      match = false;
+    }
+  }
+
+  if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && p.viewScopes.includes('own')) {
+     match = false;
+  }
+
+  return match;
+};
+
+export const canObserverViewEvaluation = (observer: Observer | null | undefined, evaluation: Evaluation, teacher?: Teacher): boolean => {
+  if (!observer) return false;
+  if (observer.role === 'admin') return true;
+  if (observer.role === 'teacher') return teacher?.employeeId === observer.employeeId;
+
+  if (teacher && !canObserverViewTeacher(observer, teacher)) {
+    return false;
+  }
+
+  if (evaluation.oid === observer.id) return true;
+
+  const p = observer.permissions;
+  if (!p) return true;
+
+  if (p.viewScopes.includes('all')) return true;
+
+  if (p.viewScopes.includes('own') && !p.viewScopes.includes('stage') && !p.viewScopes.includes('subject')) {
+    return false;
+  }
+  
+  return true;
+};
 
 export const uid = (): string => Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
 

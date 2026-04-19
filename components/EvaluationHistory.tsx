@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Evaluation, Teacher, Observer } from '../types';
-import { fmtD, ini } from '../utils/helpers';
+import { fmtD, ini, canObserverViewEvaluation } from '../utils/helpers';
 import { TYPE_LABELS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -24,17 +24,18 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
     const teacher = teachers.find(tData => tData.id === e.tid);
     const observer = observers.find(o => o.id === e.oid);
     
+    // Role-based filtering
+    const isAllowed = canObserverViewEvaluation(currentUser, e, teacher);
+    if (!isAllowed) return false;
+
     const matchesSearch = 
-      teacher?.fullName.toLowerCase().includes(search.toLowerCase()) ||
-      observer?.name.toLowerCase().includes(search.toLowerCase());
+      (teacher?.fullName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (observer?.name || '').toLowerCase().includes(search.toLowerCase());
     
     const matchesType = typeFilter === 'all' || e.type === typeFilter;
     const matchesStatus = statusFilter === 'all' || (statusFilter === 'draft' ? e.draft : !e.draft);
 
-    // Role-based filtering
-    const isAllowed = currentUser.role === 'admin' || e.oid === currentUser.id;
-
-    return matchesSearch && matchesType && matchesStatus && isAllowed;
+    return matchesSearch && matchesType && matchesStatus;
   }), [evaluations, teachers, observers, search, typeFilter, statusFilter, currentUser]);
 
   return (

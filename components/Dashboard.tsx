@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
-import { computeScore, getRating, countInds, fmtD, ini, getHRScore } from '../utils/helpers';
+import { computeScore, getRating, countInds, fmtD, ini, getHRScore, canObserverViewTeacher, canObserverViewEvaluation } from '../utils/helpers';
 import { TYPE_LABELS, TYPE_COLORS } from '../constants';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Legend, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { useLanguage } from '../context/LanguageContext';
@@ -17,44 +17,12 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   
   // Filter data based on permissions
-  const allowedTeachers = React.useMemo(() => state.teachers.filter(tData => {
-    if (currentUser?.role === 'admin') return true;
-    if (currentUser?.role === 'teacher') return tData.employeeId === currentUser.employeeId;
-    if (!currentUser?.permissions) return true; // Default to all if no permissions set
-    
-    const p = currentUser.permissions;
-    if (p.viewScopes.includes('all')) return true;
-    
-    let match = true;
-    if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
-      if (!p.allowedStages.includes(tData.division)) match = false;
-    }
-    if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
-      if (!p.allowedSubjects.includes(tData.subject)) match = false;
-    }
-    if (p.viewScopes.includes('own')) {
-       // Handled by allowedEvaluations logic mainly, but let's keep it consistent
-    }
-
-    return match;
-  }), [state.teachers, currentUser]);
-  
-  const allowedTeacherIds = React.useMemo(() => new Set(allowedTeachers.map(tData => tData.id)), [allowedTeachers]);
+  const allowedTeachers = React.useMemo(() => state.teachers.filter(tData => canObserverViewTeacher(currentUser, tData)), [state.teachers, currentUser]);
   
   const allowedEvaluations = React.useMemo(() => state.evaluations.filter(e => {
-    if (currentUser?.role === 'admin') return true;
-    if (currentUser?.role === 'teacher') {
-      const teacher = state.teachers.find(tData => tData.employeeId === currentUser.employeeId);
-      return e.tid === teacher?.id;
-    }
-    if (!currentUser?.permissions) return true;
-    
-    const p = currentUser.permissions;
-    if (p.viewScopes.includes('all')) return true;
-    if (p.viewScopes.includes('own') && e.oid !== currentUser.id) return false;
-    if (!allowedTeacherIds.has(e.tid)) return false;
-    return true;
-  }), [state.evaluations, currentUser, state.teachers, allowedTeacherIds]);
+    const teacher = state.teachers.find(tData => tData.id === e.tid);
+    return canObserverViewEvaluation(currentUser, e, teacher);
+  }), [state.evaluations, currentUser, state.teachers]);
 
   const finals = React.useMemo(() => allowedEvaluations.filter(e => !e.draft), [allowedEvaluations]);
   const drafts = React.useMemo(() => allowedEvaluations.filter(e => e.draft), [allowedEvaluations]);

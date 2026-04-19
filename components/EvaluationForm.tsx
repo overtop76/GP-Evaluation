@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Teacher, Observer, Evaluation, Score } from '../types';
-import { getRubric, countInds, uid } from '../utils/helpers';
+import { getRubric, countInds, uid, canObserverViewTeacher } from '../utils/helpers';
 import { TYPE_LABELS, LEVEL_LABELS, LEVEL_COLORS, LEVEL_BG } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
@@ -40,22 +40,7 @@ const EvaluationForm: React.FC<EvaluationFormProps> = ({ teachers, observers, cu
     }
   }, [initialData]);
 
-  const allowedTeachers = React.useMemo(() => teachers.filter(t => {
-    if (currentUser?.role === 'admin') return true;
-    if (!currentUser?.permissions) return true;
-    
-    const p = currentUser.permissions;
-    if (p.viewScopes.includes('all')) return true;
-    
-    let match = true;
-    if (p.viewScopes.includes('stage') && p.allowedStages?.length) {
-      if (!p.allowedStages.includes(t.division)) match = false;
-    }
-    if (p.viewScopes.includes('subject') && p.allowedSubjects?.length) {
-      if (!p.allowedSubjects.includes(t.subject)) match = false;
-    }
-    return match;
-  }), [teachers, currentUser]);
+  const allowedTeachers = React.useMemo(() => teachers.filter(t => canObserverViewTeacher(currentUser, t)), [teachers, currentUser]);
 
   const rubric = getRubric(type, customWeights);
   const total = countInds(type);
