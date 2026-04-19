@@ -35,7 +35,14 @@ export const canObserverViewTeacher = (observer: Observer | null | undefined, te
     if (!hasIntersection) match = false;
   }
 
-  if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && p.viewScopes.includes('own')) {
+  if (p.viewScopes.includes('role') && p.allowedRoles?.length) {
+    const teacherRoles = teacher.role.split(',').map(r => r.trim().toLowerCase());
+    const allowed = p.allowedRoles.map(r => r.trim().toLowerCase());
+    const hasIntersection = teacherRoles.some(r => allowed.includes(r));
+    if (!hasIntersection) match = false;
+  }
+
+  if (!p.viewScopes.includes('stage') && !p.viewScopes.includes('subject') && !p.viewScopes.includes('role') && p.viewScopes.includes('own')) {
      match = false;
   }
 
@@ -47,11 +54,11 @@ export const canObserverViewEvaluation = (observer: Observer | null | undefined,
   if (observer.role === 'admin') return true;
   if (observer.role === 'teacher') return teacher?.employeeId === observer.employeeId;
 
+  if (evaluation.oid === observer.id) return true;
+
   if (teacher && !canObserverViewTeacher(observer, teacher)) {
     return false;
   }
-
-  if (evaluation.oid === observer.id) return true;
 
   const p = observer.permissions;
   if (!p) return true;

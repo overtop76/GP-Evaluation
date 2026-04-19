@@ -33,6 +33,7 @@
             "viewScopes": { "type": "array", "items": { "type": "string" } },
             "allowedStages": { "type": "array", "items": { "type": "string" } },
             "allowedSubjects": { "type": "array", "items": { "type": "string" } },
+            "allowedRoles": { "type": "array", "items": { "type": "string" } },
             "canPrintReports": { "type": "boolean" },
             "canViewReports": { "type": "boolean" }
           }

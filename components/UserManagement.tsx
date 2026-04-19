@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Observer, UserRole, ObserverPermissions } from '../types';
 import { ini, hashPassword } from '../utils/helpers';
-import { SUBJECTS, DIVS } from '../constants';
+import { SUBJECTS, DIVS, ROLES } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
 
@@ -29,9 +29,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
   const [newRole, setNewRole] = useState<UserRole>('observer');
   
   // Permissions state
-  const [viewScopes, setViewScopes] = useState<('all' | 'own' | 'stage' | 'subject')[]>(['all']);
+  const [viewScopes, setViewScopes] = useState<('all' | 'own' | 'stage' | 'subject' | 'role')[]>(['all']);
   const [allowedStages, setAllowedStages] = useState<string[]>([]);
   const [allowedSubjects, setAllowedSubjects] = useState<string[]>([]);
+  const [allowedRoles, setAllowedRoles] = useState<string[]>([]);
   const [canPrintReports, setCanPrintReports] = useState(true);
   const [canViewReports, setCanViewReports] = useState(true);
   const [canAddUser, setCanAddUser] = useState(false);
@@ -49,6 +50,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         setViewScopes(user.permissions.viewScopes || ['all']);
         setAllowedStages(user.permissions.allowedStages || []);
         setAllowedSubjects(user.permissions.allowedSubjects || []);
+        setAllowedRoles(user.permissions.allowedRoles || []);
         setCanPrintReports(user.permissions.canPrintReports);
         setCanViewReports(user.permissions.canViewReports);
         setCanAddUser(user.permissions.canAddUser || false);
@@ -56,6 +58,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
         setViewScopes(['all']);
         setAllowedStages([]);
         setAllowedSubjects([]);
+        setAllowedRoles([]);
         setCanPrintReports(true);
         setCanViewReports(true);
         setCanAddUser(false);
@@ -71,6 +74,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       setViewScopes(['all']);
       setAllowedStages([]);
       setAllowedSubjects([]);
+      setAllowedRoles([]);
       setCanPrintReports(true);
       setCanViewReports(true);
       setCanAddUser(false);
@@ -104,6 +108,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
       viewScopes,
       allowedStages,
       allowedSubjects,
+      allowedRoles,
       canPrintReports,
       canViewReports,
       canAddUser
@@ -337,7 +342,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                       { id: 'all', label: t('user.scopeAllObs') },
                       { id: 'own', label: t('user.scopeOwnObs') },
                       { id: 'stage', label: t('user.scopeSpecificStages') },
-                      { id: 'subject', label: t('user.scopeSpecificSubjects') }
+                      { id: 'subject', label: t('user.scopeSpecificSubjects') },
+                      { id: 'role', label: 'Specific Roles' }
                     ].map(scope => (
                       <label key={scope.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--bg)', border: `1px solid ${viewScopes.includes(scope.id as any) ? 'var(--blue)' : 'var(--border)'}`, borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s' }}>
                         <input 
@@ -397,6 +403,27 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                             }} 
                           />
                           <span style={{ fontSize: '13px' }}>{sub}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {viewScopes.includes('role') && (
+                  <div className="field">
+                    <label className="flabel">Allowed Roles</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {ROLES.map(r => (
+                        <label key={r} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={allowedRoles.includes(r)} 
+                            onChange={e => {
+                              if (e.target.checked) setAllowedRoles([...allowedRoles, r]);
+                              else setAllowedRoles(allowedRoles.filter(role => role !== r));
+                            }} 
+                          />
+                          <span style={{ fontSize: '13px' }}>{r}</span>
                         </label>
                       ))}
                     </div>
