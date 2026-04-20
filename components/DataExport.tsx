@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppState } from '../types';
 import { exportToExcel } from '../utils/excelExport';
+import { computeScore } from '../utils/helpers';
 
 interface DataExportProps {
   state: AppState;
@@ -18,9 +19,33 @@ const DataExport: React.FC<DataExportProps> = ({ state }) => {
   const exportToJson = () => {
     const dataToExport: any = {};
     if (selectedData.includes('teachers')) dataToExport.teachers = state.teachers;
-    if (selectedData.includes('evaluations')) dataToExport.evaluations = state.evaluations;
+    if (selectedData.includes('evaluations')) {
+      dataToExport.evaluations = state.evaluations.map(ev => {
+        const teacher = state.teachers.find(t => t.id === ev.tid);
+        const observer = state.observers.find(o => o.id === ev.oid);
+        const hrData = state.hrData.find(h => h.teacherId === ev.tid);
+        const score = computeScore(ev, state.customWeights, hrData, state.hrWeight, state.hrRubric);
+        
+        return {
+          ...ev,
+          teacherName: teacher?.fullName || 'Unknown',
+          teacherEmployeeId: teacher?.employeeId || 'N/A',
+          observerName: observer?.name || 'Unknown',
+          computedScore: score !== null ? parseFloat(score.toFixed(2)) : null
+        };
+      });
+    }
     if (selectedData.includes('observers')) dataToExport.observers = state.observers;
-    if (selectedData.includes('hrData')) dataToExport.hrData = state.hrData;
+    if (selectedData.includes('hrData')) {
+      dataToExport.hrData = state.hrData.map(hr => {
+        const teacher = state.teachers.find(t => t.id === hr.teacherId);
+        return {
+          ...hr,
+          teacherName: teacher?.fullName || 'Unknown',
+          teacherEmployeeId: teacher?.employeeId || 'N/A'
+        };
+      });
+    }
     if (selectedData.includes('logs')) dataToExport.logs = state.logs;
 
     const jsonString = JSON.stringify(dataToExport, null, 2);
