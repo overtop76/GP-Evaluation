@@ -32,6 +32,62 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     });
   }, [state.evaluations, teacherId, currentType, state.currentUser, teacher]);
 
+  const finals = React.useMemo(() => allFinals.filter(e => {
+    if (startDate && e.date < startDate) return false;
+    if (endDate && e.date > endDate) return false;
+    if (observerFilter && e.oid !== observerFilter) return false;
+    return true;
+  }), [allFinals, startDate, endDate, observerFilter]);
+
+  const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
+  const hrRubricLevel = { 
+    absences: state.hrRubric?.absences || [2, 5, 9], 
+    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
+  };
+  
+  // Calculate domain scores for all evaluations in scope
+  const allDomainScores = React.useMemo(() => 
+    finals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel)),
+  [finals, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel.absences.join(), hrRubricLevel.earlyLate.join()]);
+
+  const overallAvg = React.useMemo(() => {
+    if (!finals.length) return 0;
+    const sum = finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel), 0);
+    return sum / finals.length;
+  }, [finals, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel.absences.join(), hrRubricLevel.earlyLate.join()]);
+
+  const ds = React.useMemo(() => {
+    if (!allDomainScores.length) return [];
+    const first = allDomainScores[0];
+    return first.map((d, i) => {
+      const avg = allDomainScores.reduce((acc, curr) => acc + curr[i].avg, 0) / allDomainScores.length;
+      return { ...d, avg };
+    });
+  }, [allDomainScores]);
+
+  // Prepare data for the comparison chart
+  const observerIds = Array.from(new Set(finals.map(f => f.oid)));
+  const observersInReport = observerIds.map(id => state.observers.find(o => o.id === id)).filter(Boolean) as Observer[];
+
+  const comparisonData = React.useMemo(() => {
+    return ds.map((domain, dIdx) => {
+      const entry: any = { 
+        name: domain.name.replace(/D\d+: /, '').replace('D-HR: ', '').substring(0, 25),
+        full: domain.name 
+      };
+      
+      observersInReport.forEach(obs => {
+        const obsEvals = finals.filter(f => f.oid === obs.id);
+        if (obsEvals.length) {
+          const obsDs = obsEvals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel));
+          const avg = obsDs.reduce((acc, curr) => acc + curr[dIdx].avg, 0) / obsDs.length;
+          entry[obs.name] = parseFloat(avg.toFixed(2));
+        }
+      });
+      return entry;
+    });
+  }, [ds, observersInReport, finals, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel.absences.join(), hrRubricLevel.earlyLate.join()]);
+
   if (!teacher) return <div className="page"><div className="empty"><span className="material-icons mi">error_outline</span><p>Teacher not found.</p></div></div>;
 
   
@@ -80,68 +136,16 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     );
   }
 
-  const finals = React.useMemo(() => allFinals.filter(e => {
-    if (startDate && e.date < startDate) return false;
-    if (endDate && e.date > endDate) return false;
-    if (observerFilter && e.oid !== observerFilter) return false;
-    return true;
-  }), [allFinals, startDate, endDate, observerFilter]);
-
-  const teacherHRData = state.hrData?.find(h => h.teacherId === teacherId);
-  const hrRubric = { 
-    absences: state.hrRubric?.absences || [2, 5, 9], 
-    earlyLate: state.hrRubric?.earlyLate || state.hrRubric?.earlyLeaves || [2, 4, 7] 
-  };
-  
   const latest = finals.length ? finals[finals.length - 1] : null;
-  
-  // Calculate domain scores for all evaluations in scope
-  const allDomainScores = React.useMemo(() => 
-    finals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubric)),
-    [finals, state.customWeights, teacherHRData, state.hrWeight, hrRubric]
-  );
 
-  // Average domain scores across all observers for the breakdown table
-  const ds = React.useMemo(() => {
-    if (!allDomainScores.length) return [];
-    const first = allDomainScores[0];
-    return first.map((d, i) => {
-      const avg = allDomainScores.reduce((acc, curr) => acc + curr[i].avg, 0) / allDomainScores.length;
-      return { ...d, avg };
-    });
-  }, [allDomainScores]);
-
-  const latestScore = finals.length ? finals.reduce((a, e) => a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric), 0) / finals.length : 0;
-  const avgScore = latestScore; // In this view, they are the same as we average everything in scope
+  const latestScore = overallAvg;
+  const avgScore = overallAvg; // In this view, they are the same as we average everything in scope
   const r = latestScore ? getRating(latestScore) : { label: 'N/A', css: '', color: 'var(--slate)', hex: '#f1f5f9', level: 0 };
   const rubric = getRubric(currentType, state.customWeights);
   
   const isCollective = !observerFilter;
   const observer = state.observers.find(o => o.id === observerFilter);
   const reportTitle = isCollective ? t('rep.collectiveReport') : `${t('rep.observerReport')}: ${observer?.name || t('rep.unknown')}`;
-
-  // Prepare data for the comparison chart
-  const observerIds = Array.from(new Set(finals.map(f => f.oid)));
-  const observersInReport = observerIds.map(id => state.observers.find(o => o.id === id)).filter(Boolean) as Observer[];
-
-  const comparisonData = React.useMemo(() => {
-    return ds.map((domain, dIdx) => {
-      const entry: any = { 
-        name: domain.name.replace(/D\d+: /, '').replace('D-HR: ', '').substring(0, 25),
-        full: domain.name 
-      };
-      
-      observersInReport.forEach(obs => {
-        const obsEvals = finals.filter(f => f.oid === obs.id);
-        if (obsEvals.length) {
-          const obsDs = obsEvals.map(f => getDomainScores(f, state.customWeights, teacherHRData, state.hrWeight, hrRubric));
-          const avg = obsDs.reduce((acc, curr) => acc + curr[dIdx].avg, 0) / obsDs.length;
-          entry[obs.name] = parseFloat(avg.toFixed(2));
-        }
-      });
-      return entry;
-    });
-  }, [ds, observersInReport, finals, state.customWeights, teacherHRData, state.hrWeight]);
 
   const sm: Record<string, number> = {};
   const nm: Record<string, string> = {};
@@ -466,8 +470,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                     <div style={{ height: '200px' }} className="print-chart-container">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={[
-                          { name: t('set.absences'), value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubric.absences) },
-                          { name: t('hr.earlyLate') || 'Early/Late Arrivals', value: teacherHRData.earlyLate, score: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate) }
+                          { name: t('set.absences'), value: teacherHRData.absences, score: getHRScore('absences', teacherHRData.absences, hrRubricLevel.absences) },
+                          { name: t('hr.earlyLate') || 'Early/Late Arrivals', value: teacherHRData.earlyLate, score: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubricLevel.earlyLate) }
                         ]}>
                           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
                           <XAxis dataKey="name" tick={{ fontSize: 11, fontWeight: 700, fill: 'var(--slate)' }} axisLine={false} tickLine={false} />
@@ -492,12 +496,12 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('set.absences')}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.absences}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubric.absences) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('absences', teacherHRData.absences, hrRubric.absences)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('absences', teacherHRData.absences, hrRubricLevel.absences) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('absences', teacherHRData.absences, hrRubricLevel.absences)}</div>
                       </div>
                       <div style={{ textAlign: 'center' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--slate)', textTransform: 'uppercase', marginBottom: '4px' }}>{t('hr.earlyLate') || 'Early/Late Arrivals'}</div>
                         <div style={{ fontFamily: '"Barlow Condensed", sans-serif', fontSize: '24px', fontWeight: 900, color: 'var(--navy)' }}>{teacherHRData.earlyLate}</div>
-                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)}</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: getHRScore('earlyLate', teacherHRData.earlyLate, hrRubricLevel.earlyLate) >= 3 ? '#10b981' : '#f43f5e' }}>{t('rep.score')}: {getHRScore('earlyLate', teacherHRData.earlyLate, hrRubricLevel.earlyLate)}</div>
                       </div>
                     </div>
                     
@@ -573,7 +577,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   <tbody>
                     {[...finals].reverse().map(ev => {
                       const teacherHRData = state.hrData?.find(h => h.teacherId === ev.tid);
-                      const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight, hrRubric);
+                      const s = computeScore(ev, state.customWeights, teacherHRData, state.hrWeight, hrRubricLevel);
                       const rr = getRating(s);
                       const obs = state.observers.find(o => o.id === ev.oid);
                       return (
