@@ -405,6 +405,13 @@
   .print-break-inside-avoid {
     break-inside: avoid !important;
   }
+  .print-only {
+    display: block !important;
+  }
+}
+
+.print-only {
+  display: none;
 }
 
 * {

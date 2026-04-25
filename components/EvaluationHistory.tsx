@@ -149,6 +149,15 @@ const EvaluationHistory: React.FC<EvaluationHistoryProps> = ({ evaluations, teac
         </div>
       </div>
 
+      {currentUser.role === 'admin' && (
+        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center' }}>
+          <button className="btn btn-primary" onClick={() => onNavigate('adminHistoryDetails')}>
+            <span className="material-icons-outlined" style={{ fontSize: '18px', marginRight: '8px' }}>analytics</span>
+            Evaluation History Details
+          </button>
+        </div>
+      )}
+
       {confirmDelete && (
         <div className="overlay" onClick={(e) => e.target === e.currentTarget && setConfirmDelete(null)}>
           <div className="mbox" style={{ maxWidth: '400px' }}>

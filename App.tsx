@@ -12,6 +12,7 @@ import UserManagement from './components/UserManagement';
 import AuditLog from './components/AuditLog';
 import HRAttendance from './components/HRAttendance';
 import EvaluationHistory from './components/EvaluationHistory';
+import AdminHistoryDetails from './components/AdminHistoryDetails';
 
 const AppContent: React.FC = () => {
   const { state, login, logout, addTeacher, updateTeacher, deleteTeacher, saveEvaluation, deleteEvaluation, addUser, updateUser, deleteUser, updateWeights, resetWeights, resetSystem, updateHRWeight, updateHRRubric, updateCustomSubjects, toasts } = useApp();
@@ -113,6 +114,14 @@ const AppContent: React.FC = () => {
           onNavigate={handleNavigate}
           onDelete={deleteEvaluation}
           currentUser={state.currentUser!}
+        />;
+      case 'adminHistoryDetails':
+        if (state.currentUser?.role !== 'admin') {
+          return <Dashboard state={state} onNavigate={handleNavigate} onDeleteEvaluation={deleteEvaluation} />;
+        }
+        return <AdminHistoryDetails 
+          state={state}
+          onNavigate={handleNavigate}
         />;
       case 'evaluate':
         const initialEval = evalParams.eid 
