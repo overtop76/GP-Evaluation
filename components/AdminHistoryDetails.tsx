@@ -12,6 +12,19 @@ interface AdminHistoryDetailsProps {
 const AdminHistoryDetails: React.FC<AdminHistoryDetailsProps> = ({ state, onNavigate }) => {
   const { t } = useLanguage();
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [totalFinalizedFilter, setTotalFinalizedFilter] = useState('');
+
+  const uniqueRoles = useMemo(() => {
+    return Array.from(new Set(state.teachers.map(t => t.role).filter(Boolean))).sort();
+  }, [state.teachers]);
+
+  const uniqueTotals = useMemo(() => {
+    const finals = state.evaluations.filter(e => !e.draft);
+    const counts = state.teachers.map(teacher => finals.filter(f => f.tid === teacher.id).length);
+    const uniqueArray = Array.from(new Set(counts)) as number[];
+    return uniqueArray.sort((a, b) => a - b);
+  }, [state.evaluations, state.teachers]);
 
   const hrRubricLevel = useMemo(() => ({
     absences: state.hrRubric?.absences || [2, 5, 9],
@@ -54,8 +67,19 @@ const AdminHistoryDetails: React.FC<AdminHistoryDetailsProps> = ({ state, onNavi
       stats = stats.filter(row => row.name.toLowerCase().includes(search.toLowerCase()) || row.role.toLowerCase().includes(search.toLowerCase()));
     }
 
+    if (roleFilter) {
+      stats = stats.filter(row => row.role === roleFilter);
+    }
+
+    if (totalFinalizedFilter) {
+      const v = parseInt(totalFinalizedFilter, 10);
+      if (!isNaN(v)) {
+        stats = stats.filter(row => row.totalFinals === v);
+      }
+    }
+
     return stats;
-  }, [state.evaluations, state.teachers, state.observers, state.hrData, state.customWeights, state.hrWeight, hrRubricLevel, search]);
+  }, [state.evaluations, state.teachers, state.observers, state.hrData, state.customWeights, state.hrWeight, hrRubricLevel, search, roleFilter, totalFinalizedFilter]);
 
   const handleExportExcel = () => {
     const dataToExport = teacherStats.map(row => {
@@ -116,8 +140,8 @@ const AdminHistoryDetails: React.FC<AdminHistoryDetailsProps> = ({ state, onNavi
       </div>
 
       <div className="card-xl" style={{ overflow: 'hidden' }}>
-        <div className="no-print" style={{ padding: '24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', alignItems: 'center' }}>
-          <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+        <div className="no-print" style={{ padding: '24px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '400px' }}>
             <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate)', fontSize: '20px' }}>search</span>
             <input 
               className="finput" 
@@ -127,6 +151,30 @@ const AdminHistoryDetails: React.FC<AdminHistoryDetailsProps> = ({ state, onNavi
               onChange={e => setSearch(e.target.value)}
             />
           </div>
+          
+          <select 
+            className="finput" 
+            style={{ width: 'auto', minWidth: '150px' }}
+            value={roleFilter}
+            onChange={e => setRoleFilter(e.target.value)}
+          >
+            <option value="">All Roles</option>
+            {uniqueRoles.map(role => (
+              <option key={role} value={role}>{role}</option>
+            ))}
+          </select>
+
+          <select 
+            className="finput" 
+            style={{ width: 'auto', minWidth: '150px' }}
+            value={totalFinalizedFilter}
+            onChange={e => setTotalFinalizedFilter(e.target.value)}
+          >
+            <option value="">All Totals</option>
+            {uniqueTotals.map(total => (
+              <option key={total} value={total.toString()}>{total} Finalized</option>
+            ))}
+          </select>
         </div>
 
         <div style={{ overflowX: 'auto' }}>
