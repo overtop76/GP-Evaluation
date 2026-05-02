@@ -280,7 +280,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                 <label className="flabel">{t('dir.subject')}</label>
                 <select className="finput" value={newSubject} onChange={e => setNewSubject(e.target.value)}>
                   <option value="">{t('action.select')}…</option>
-                  {[...SUBJECTS, ...(customSubjects || [])].map(s => <option key={s}>{s}</option>)}
+                  {Array.from(new Set([...SUBJECTS, ...(customSubjects || [])])).map(s => <option key={s}>{s}</option>)}
                 </select>
               </div>
               <div className="field">

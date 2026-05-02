@@ -104,7 +104,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
               min="0" 
               max="30" 
               value={hrWeight} 
-              onChange={(e) => setHrWeight(parseInt(e.target.value))}
+              onChange={(e) => setHrWeight(parseInt(e.target.value, 10) || 0)}
               style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '3px', appearance: 'none', cursor: 'pointer' }}
             />
           </div>
@@ -171,7 +171,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                       onChange={e => {
                         const next = { ...hrRubric };
                         next[key] = [...rubricArray];
-                        next[key][idx] = parseInt(e.target.value) || 0;
+                        next[key][idx] = parseInt(e.target.value, 10) || 0;
                         setHrRubric(next);
                       }}
                     />
@@ -285,7 +285,7 @@ const Settings: React.FC<SettingsProps> = ({ state, onUpdateWeights, onResetWeig
                             min="0" 
                             max="100" 
                             value={weights[i]} 
-                            onChange={e => handleWeightChange(type, i, parseInt(e.target.value) || 0)}
+                            onChange={e => handleWeightChange(type, i, parseInt(e.target.value, 10) || 0)}
                           />
                           <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--slate)' }}>%</span>
                         </div>
