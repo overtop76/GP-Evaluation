@@ -394,7 +394,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     try {
       const topStrengths = strengths.sort((a,b) => b.score - a.score).slice(0, 5).map(s => s.text).join('; ');
       const topImps = imps.sort((a,b) => a.score - b.score).slice(0, 5).map(s => s.text).join('; ');
-      const domainScoresStr = ds.map(d => `${d.name}: ${d.score.toFixed(2)}`).join(', ');
+      const domainScoresStr = ds.map(d => `${d.name}: ${d.avg.toFixed(2)}`).join(', ');
 
       const promptString = `You are an expert HR and Teacher Performance Reviewer. 
 Please generate 3 professional paragraphs for a teacher evaluation report for ${teacher.fullName}.
