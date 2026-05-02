@@ -406,7 +406,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   return (
     <div className="page">
       <div
-        className="ph"
+        className="ph no-print"
         style={{
           display: "flex",
           justifyContent: "space-between",
@@ -703,7 +703,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                     borderRadius: "16px",
                     border: "1px solid var(--border)",
                   }}
-                  className="print-break-inside-avoid"
+                  className="print-break-inside-avoid print:!h-[500px]"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -862,7 +862,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             </div>
 
-            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start page-break print:grid-cols-1">
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-8 print:grid-cols-1">
               <div className="lg:col-span-2 print:col-span-1 print-break-inside-avoid">
                 <h2
                   style={{
@@ -875,7 +875,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 >
                   {t("rep.perfByDomain")}
                 </h2>
-                <div style={{ height: Math.max(300, ds.length * 55 + 40) }}>
+                <div className="print:!h-[400px]" style={{ height: Math.max(300, ds.length * 55 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       layout="vertical"
@@ -1145,7 +1145,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
             <div
               style={{ padding: "0 32px 32px" }}
-              className="page-break print-break-inside-avoid"
+              className="mt-8 print-break-inside-avoid"
             >
               <h2
                 style={{
@@ -1236,7 +1236,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
             {teacherHRData && (
               <div
                 style={{ padding: "0 32px 32px" }}
-                className="page-break print-break-inside-avoid"
+                className="mt-8 print-break-inside-avoid"
               >
                 <h2
                   style={{
@@ -1469,7 +1469,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
               </div>
             )}
 
-            <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 page-break print:grid-cols-1">
+            <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 print:grid-cols-1">
               <div className="print-break-inside-avoid">
                 <h2
                   style={{
