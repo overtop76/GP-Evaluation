@@ -415,8 +415,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
       const domainScoresStr = ds.map(d => `${d.name}: ${d.avg.toFixed(2)}`).join(', ');
 
       const hrScoreAbs = teacherHRData ? getHRScore('absences', teacherHRData.absences, hrRubricLevel.absences) : null;
-      const hrScoreEarly = teacherHRData ? getHRScore('earlyLate', teacherHRData.earlyLate, hrRubricLevel.earlyLate) : null;
-      const hrInfoStr = teacherHRData ? `HR Data: Absences: ${teacherHRData.absences} (Score: ${hrScoreAbs}), Early Leaves/Late: ${teacherHRData.earlyLate} (Score: ${hrScoreEarly})` : 'HR Data: None provided.';
+      const hrScoreEarly = teacherHRData ? getHRScore('earlyLate', teacherHRData.earlyLate ?? teacherHRData.earlyLeaves, hrRubricLevel.earlyLate) : null;
+      const hrInfoStr = teacherHRData ? `HR Data: Absences: ${teacherHRData.absences} (Score: ${hrScoreAbs}), Early Leaves/Late: ${teacherHRData.earlyLate ?? teacherHRData.earlyLeaves} (Score: ${hrScoreEarly})` : 'HR Data: None provided.';
 
       const promptString = `You are an expert HR and Teacher Performance Reviewer. 
 Please generate a professional evaluation report for ${teacher.fullName}.
@@ -1362,10 +1362,10 @@ Your output must be JSON with exact keys:
                             },
                             {
                               name: t("hr.earlyLate") || "Early/Late Arrivals",
-                              value: teacherHRData.earlyLate,
+                              value: teacherHRData.earlyLate ?? teacherHRData.earlyLeaves,
                               score: getHRScore(
                                 "earlyLate",
-                                teacherHRData.earlyLate,
+                                teacherHRData.earlyLate ?? teacherHRData.earlyLeaves,
                                 hrRubricLevel.earlyLate,
                               ),
                             },
@@ -1499,7 +1499,7 @@ Your output must be JSON with exact keys:
                             color: "var(--navy)",
                           }}
                         >
-                          {teacherHRData.earlyLate}
+                          {teacherHRData.earlyLate ?? teacherHRData.earlyLeaves}
                         </div>
                         <div
                           style={{
@@ -1508,7 +1508,7 @@ Your output must be JSON with exact keys:
                             color:
                               getHRScore(
                                 "earlyLate",
-                                teacherHRData.earlyLate,
+                                teacherHRData.earlyLate ?? teacherHRData.earlyLeaves,
                                 hrRubricLevel.earlyLate,
                               ) >= 3
                                 ? "#10b981"
@@ -1518,7 +1518,7 @@ Your output must be JSON with exact keys:
                           {t("rep.score")}:{" "}
                           {getHRScore(
                             "earlyLate",
-                            teacherHRData.earlyLate,
+                            teacherHRData.earlyLate ?? teacherHRData.earlyLeaves,
                             hrRubricLevel.earlyLate,
                           )}
                         </div>

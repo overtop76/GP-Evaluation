@@ -223,7 +223,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                     <td>
                       {(() => {
                         const teacherHRData = hrData?.find(h => h.teacherId === tData.id);
-                        const score = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric.absences) + getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)) / 2 : null;
+                        const score = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric?.absences || [2,5,9]) + getHRScore('earlyLate', teacherHRData.earlyLate ?? teacherHRData.earlyLeaves, hrRubric?.earlyLate || [2,4,7])) / 2 : null;
                         return score != null ? (
                           <span style={{ fontSize: '14px', fontWeight: 700, color: score >= 3 ? '#10b981' : '#f43f5e' }}>{score.toFixed(2)}</span>
                         ) : (

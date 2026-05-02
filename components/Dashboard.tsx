@@ -47,7 +47,7 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
           return a + computeScore(e, state.customWeights, teacherHRData, state.hrWeight, hrRubric);
         }, 0) / evals.length : null;
         const teacherHRData = state.hrData?.find(h => h.teacherId === tData.id);
-        const attendanceScore = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric.absences) + getHRScore('earlyLate', teacherHRData.earlyLate, hrRubric.earlyLate)) / 2 : null;
+        const attendanceScore = teacherHRData ? (getHRScore('absences', teacherHRData.absences, hrRubric?.absences || [2,5,9]) + getHRScore('earlyLate', teacherHRData.earlyLate ?? teacherHRData.earlyLeaves, hrRubric?.earlyLate || [2,4,7])) / 2 : null;
         return (avg != null && avg < 2.5) || (attendanceScore != null && attendanceScore < 2.5);
     }).length, ico: 'warning', col: '#ef4444' }
   ], [currentUser?.role, allowedTeachers, finals, avg, state.hrData, state.customWeights, state.hrWeight, hrRubric, t]);
@@ -98,8 +98,8 @@ const Dashboard: React.FC<DashboardProps> = ({ state, onNavigate, onDeleteEvalua
     
     allowedTeachers.forEach(tData => {
       const data = (state.hrData || []).find(d => d.teacherId === tData.id) || { absences: 0, earlyLate: 0 };
-      totalAbsencesScore += getHRScore('absences', data.absences, hrRubric.absences);
-      totalEarlyLateScore += getHRScore('earlyLate', data.earlyLate, hrRubric.earlyLate);
+      totalAbsencesScore += getHRScore('absences', data.absences, hrRubric?.absences || [2,5,9]);
+      totalEarlyLateScore += getHRScore('earlyLate', data.earlyLate ?? (data as any).earlyLeaves, hrRubric?.earlyLate || [2,4,7]);
     });
     
     const count = allowedTeachers.length;

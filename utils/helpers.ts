@@ -119,10 +119,11 @@ export const countInds = (type: string): number => {
   return (RUBRIC_DEF[type] || []).reduce((a, d) => a + d.subdomains.reduce((b, s) => b + s.indicators.length, 0), 0);
 };
 
-export const getHRScore = (type: 'absences' | 'earlyLate', value: number, thresholds: number[]): number => {
-  if (value <= thresholds[0]) return 4;
-  if (value <= thresholds[1]) return 3;
-  if (value <= thresholds[2]) return 2;
+export const getHRScore = (type: 'absences' | 'earlyLate', value: number | undefined, thresholds: number[]): number => {
+  const safeValue = value ?? 0;
+  if (safeValue <= thresholds[0]) return 4;
+  if (safeValue <= thresholds[1]) return 3;
+  if (safeValue <= thresholds[2]) return 2;
   return 1;
 };
 
@@ -158,7 +159,7 @@ export const computeScore = (ev: Evaluation, customWeights?: Record<string, numb
       earlyLate: hrRubric.earlyLate || hrRubric.earlyLeaves || [2, 4, 7] 
     };
     const s1 = getHRScore('absences', hrData.absences ?? 0, safeRubric.absences);
-    const s2 = getHRScore('earlyLate', hrData.earlyLate ?? 0, safeRubric.earlyLate);
+    const s2 = getHRScore('earlyLate', hrData.earlyLate ?? hrData.earlyLeaves ?? 0, safeRubric.earlyLate);
     const hrScore = (s1 + s2) / 2;
     
     // Final Score = (ObsScore * (100 - HRWeight) / 100) + (HRScore * HRWeight / 100)
@@ -201,7 +202,7 @@ export const getDomainScores = (ev: Evaluation, customWeights?: Record<string, n
       earlyLate: hrRubric.earlyLate || hrRubric.earlyLeaves || [2, 4, 7] 
     };
     const s1 = getHRScore('absences', hrData.absences ?? 0, safeRubric.absences);
-    const s2 = getHRScore('earlyLate', hrData.earlyLate ?? 0, safeRubric.earlyLate);
+    const s2 = getHRScore('earlyLate', hrData.earlyLate ?? hrData.earlyLeaves ?? 0, safeRubric.earlyLate);
     const hrScore = (s1 + s2) / 2;
     
     scores.push({
