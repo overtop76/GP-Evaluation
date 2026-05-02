@@ -392,7 +392,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ observers, currentUser,
                   <div className="field">
                     <label className="flabel">{t('user.allowedSubjects')}</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      {[...SUBJECTS, ...customSubjects].map(sub => (
+                      {Array.from(new Set([...SUBJECTS, ...(customSubjects || [])])).map(sub => (
                         <label key={sub} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', background: 'var(--bg)', borderRadius: '6px', border: '1px solid var(--border)', cursor: 'pointer' }}>
                           <input 
                             type="checkbox" 
