@@ -13,12 +13,22 @@ export const AiPrintReport: React.FC<AiPrintReportProps> = ({ teacherId, state, 
   const teacher = state.teachers.find(t => t.id === teacherId);
 
   useEffect(() => {
-    // Auto-trigger print when component loads
-    const timer = setTimeout(() => {
-      window.print();
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (teacher) {
+      const originalTitle = document.title;
+      const employeeIdStr = teacher.employeeId ? ` ${teacher.employeeId}` : '';
+      document.title = `${teacher.fullName}.${employeeIdStr}`;
+
+      // Auto-trigger print when component loads
+      const timer = setTimeout(() => {
+        window.print();
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        document.title = originalTitle;
+      };
+    }
+  }, [teacher]);
 
   if (!teacher || !teacher.aiSummary) {
     return (

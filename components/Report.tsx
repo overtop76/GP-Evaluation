@@ -62,6 +62,19 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
     setAiSummary(teacher?.aiSummary || null);
   }, [teacher?.aiSummary]);
 
+  React.useEffect(() => {
+    if (teacher) {
+      const originalTitle = document.title;
+      // Set the document title to include Employee Name and ID for printing
+      const employeeIdStr = teacher.employeeId ? ` ${teacher.employeeId}` : '';
+      document.title = `${teacher.fullName}.${employeeIdStr}`;
+      
+      return () => {
+        document.title = originalTitle;
+      };
+    }
+  }, [teacher]);
+
   const allFinals = React.useMemo(() => {
     if (!teacher) return [];
     return state.evaluations.filter((e) => {
