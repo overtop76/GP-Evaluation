@@ -388,7 +388,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
 
   // Chart Data
   const handleGenerateAi = async () => {
-    if (!teacher || typeof process.env.GEMINI_API_KEY === 'undefined') return;
+    if (!teacher) return;
     setIsGeneratingAi(true);
     
     try {
@@ -412,7 +412,7 @@ Your output must be JSON with exact keys:
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-preview",
+        model: "gemini-3-flash-preview",
         contents: promptString,
         config: {
           responseMimeType: "application/json",
@@ -433,6 +433,7 @@ Your output must be JSON with exact keys:
       setAiSummary(parsed);
     } catch (e) {
       console.error("AI Generation failed", e);
+      alert("AI Generation failed: " + (e instanceof Error ? e.message : String(e)));
     } finally {
       setIsGeneratingAi(false);
     }
