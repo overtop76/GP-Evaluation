@@ -1,4 +1,5 @@
 import React from "react";
+import { GoogleGenAI, Type } from "@google/genai";
 import { Teacher, Observer, Evaluation, AppState } from "../types";
 import {
   computeScore,
@@ -51,6 +52,8 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const [selectedDomain, setSelectedDomain] = React.useState<string | null>(
     null,
   );
+  const [aiSummary, setAiSummary] = React.useState<{ exec: string; strengths: string; areas: string } | null>(null);
+  const [isGeneratingAi, setIsGeneratingAi] = React.useState(false);
 
   const teacher = state.teachers.find((t) => t.id === teacherId);
 
@@ -384,6 +387,57 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   }
 
   // Chart Data
+  const handleGenerateAi = async () => {
+    if (!teacher || typeof process.env.GEMINI_API_KEY === 'undefined') return;
+    setIsGeneratingAi(true);
+    
+    try {
+      const topStrengths = strengths.sort((a,b) => b.score - a.score).slice(0, 5).map(s => s.text).join('; ');
+      const topImps = imps.sort((a,b) => a.score - b.score).slice(0, 5).map(s => s.text).join('; ');
+      const domainScoresStr = ds.map(d => `${d.name}: ${d.score.toFixed(2)}`).join(', ');
+
+      const promptString = `You are an expert HR and Teacher Performance Reviewer. 
+Please generate 3 professional paragraphs for a teacher evaluation report for ${teacher.fullName}.
+Type of Evaluation: ${TYPE_LABELS[currentType]}
+Average Score: ${avgScore.toFixed(2)} out of 4.
+Domain Scores: ${domainScoresStr}
+Identified Strengths: ${topStrengths}
+Areas for Development: ${topImps}
+
+Your output must be JSON with exact keys:
+"exec": A concise Executive Summary paragraph
+"strengths": A summary paragraph of the teacher's key strengths
+"areas": A supportive summary paragraph for areas of development
+      `;
+
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-flash-preview",
+        contents: promptString,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              exec: { type: Type.STRING },
+              strengths: { type: Type.STRING },
+              areas: { type: Type.STRING }
+            },
+            required: ["exec", "strengths", "areas"]
+          }
+        }
+      });
+      
+      const jsonStr = response.text?.trim() || "{}";
+      const parsed = JSON.parse(jsonStr);
+      setAiSummary(parsed);
+    } catch (e) {
+      console.error("AI Generation failed", e);
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   const chartData = ds.map((d) => ({
     name: d.name.replace(/D\d+: /, "").substring(0, 28),
     avg: d.avg,
@@ -703,7 +757,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                     borderRadius: "16px",
                     border: "1px solid var(--border)",
                   }}
-                  className="print-break-inside-avoid print:!h-[500px]"
+                  className="print-break-inside-avoid print-chart-tall"
                 >
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
@@ -763,17 +817,25 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                   }}
                   className="print-break-inside-avoid"
                 >
-                  <h3
-                    style={{
-                      fontSize: "14px",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                      color: "var(--slate)",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    {t("rep.execSummary")}
-                  </h3>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
+                    <h3
+                      style={{
+                        fontSize: "14px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        color: "var(--slate)",
+                      }}
+                    >
+                      {t("rep.execSummary")}
+                    </h3>
+                    <button
+                      className="btn secondary no-print"
+                      onClick={handleGenerateAi}
+                      disabled={isGeneratingAi}
+                    >
+                      {isGeneratingAi ? "Generating AI..." : "Generate AI Summary"}
+                    </button>
+                  </div>
                   <p
                     style={{
                       fontSize: "14px",
@@ -781,7 +843,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       color: "var(--slate-darker)",
                     }}
                   >
-                    {t("rep.summaryText")
+                    {aiSummary ? aiSummary.exec : t("rep.summaryText")
                       .replace("{name}", teacher.fullName)
                       .replace(
                         "{type}",
@@ -789,10 +851,10 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       )
                       .replace("{count}", finals.length.toString())
                       .replace("{score}", latestScore.toFixed(2))
-                      .replace("{label}", t(`lvl.${r.level}`) || r.label)}
-                    {isCollective
-                      ? ` ${t("rep.collectiveNote")}`
-                      : ` ${t("rep.individualNote")}`}
+                      .replace("{label}", t(`lvl.${r.level}`) || r.label) + 
+                      (isCollective
+                        ? ` ${t("rep.collectiveNote")}`
+                        : ` ${t("rep.individualNote")}`)}
                   </p>
                   <div
                     style={{ marginTop: "16px", display: "flex", gap: "12px" }}
@@ -875,7 +937,7 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                 >
                   {t("rep.perfByDomain")}
                 </h2>
-                <div className="print:!h-[400px]" style={{ height: Math.max(300, ds.length * 55 + 40) }}>
+                <div className="print-chart-tall" style={{ height: Math.max(300, ds.length * 55 + 40) }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       layout="vertical"
@@ -1501,6 +1563,20 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       gap: "10px",
                     }}
                   >
+                    {aiSummary && (
+                      <p style={{
+                        fontSize: "14px",
+                        lineHeight: 1.6,
+                        color: "var(--slate-darker)",
+                        marginBottom: "12px",
+                        background: "rgba(16, 185, 129, 0.05)",
+                        padding: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid #bbf7d0"
+                      }}>
+                        {aiSummary.strengths}
+                      </p>
+                    )}
                     {strengths.map((s) => (
                       <div
                         key={s.id}
@@ -1581,6 +1657,20 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
                       gap: "10px",
                     }}
                   >
+                    {aiSummary && (
+                      <p style={{
+                        fontSize: "14px",
+                        lineHeight: 1.6,
+                        color: "var(--slate-darker)",
+                        marginBottom: "12px",
+                        background: "rgba(239, 68, 68, 0.05)",
+                        padding: "16px",
+                        borderRadius: "12px",
+                        border: "1px solid #fecaca"
+                      }}>
+                        {aiSummary.areas}
+                      </p>
+                    )}
                     {imps.map((s) => (
                       <div
                         key={s.id}
