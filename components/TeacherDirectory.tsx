@@ -4,6 +4,7 @@ import { computeScore, getRating, ini, getHRScore, canObserverViewTeacher, canOb
 import { SUBJECTS, ROLES, DIVS } from '../constants';
 import { useLanguage } from '../context/LanguageContext';
 import { useApp } from '../context/AppContext';
+import { Sparkles, Printer } from 'lucide-react';
 
 interface TeacherDirectoryProps {
   teachers: Teacher[];
@@ -173,7 +174,7 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{tData.fullName}</span>
                           {tData.aiSummary && (
-                            <span className="material-icons" style={{ fontSize: '16px', color: '#10b981' }} title="AI Summary Generated">auto_awesome</span>
+                            <Sparkles size={16} color="#10b981" title="AI Summary Generated" />
                           )}
                         </div>
                       </div>
@@ -211,6 +212,11 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                         {(!currentUser.permissions || currentUser.permissions.canViewReports) && (
                           <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('report', { tid: tData.id, type: 'gp' })}>
                             <span className="material-icons-outlined" style={{ fontSize: '16px' }}>bar_chart</span> {t('action.report')}
+                          </button>
+                        )}
+                        {tData.aiSummary && (!currentUser.permissions || currentUser.permissions.canViewReports) && (
+                          <button className="btn btn-ghost btn-sm" onClick={() => onNavigate('ai-print', { tid: tData.id })} title="Print AI Summary">
+                            <Printer size={16} />
                           </button>
                         )}
                         {(currentUser.role === 'admin' || currentUser.permissions?.canAddUser) && (

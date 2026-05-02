@@ -7,6 +7,7 @@ import Dashboard from './components/Dashboard';
 import TeacherDirectory from './components/TeacherDirectory';
 import EvaluationForm from './components/EvaluationForm';
 import Report from './components/Report';
+import AiPrintReport from './components/AiPrintReport';
 import Settings from './components/Settings';
 import UserManagement from './components/UserManagement';
 import AuditLog from './components/AuditLog';
@@ -143,6 +144,12 @@ const AppContent: React.FC = () => {
         return <Report 
           teacherId={evalParams.tid} 
           type={evalParams.type || 'gp'} 
+          state={state} 
+          onBack={() => setActiveTab('teachers')} 
+        />;
+      case 'ai-print':
+        return <AiPrintReport 
+          teacherId={evalParams.tid} 
           state={state} 
           onBack={() => setActiveTab('teachers')} 
         />;
