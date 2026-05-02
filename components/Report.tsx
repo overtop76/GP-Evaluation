@@ -24,6 +24,7 @@ import {
   Legend,
 } from "recharts";
 import { useLanguage } from "../context/LanguageContext";
+import { useApp } from "../context/AppContext";
 
 const CHART_COLORS = [
   "#6366f1",
@@ -45,6 +46,8 @@ interface ReportProps {
 
 const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const { t } = useLanguage();
+  const { updateTeacher, showToast } = useApp();
+  const teacher = state.teachers.find((t) => t.id === teacherId);
   const [currentType, setCurrentType] = React.useState(type);
   const [startDate, setStartDate] = React.useState("");
   const [endDate, setEndDate] = React.useState("");
@@ -52,10 +55,12 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
   const [selectedDomain, setSelectedDomain] = React.useState<string | null>(
     null,
   );
-  const [aiSummary, setAiSummary] = React.useState<{ exec: string; strengths: string; areas: string } | null>(null);
+  const [aiSummary, setAiSummary] = React.useState<{ exec: string; strengths: string; areas: string } | null>(teacher?.aiSummary || null);
   const [isGeneratingAi, setIsGeneratingAi] = React.useState(false);
 
-  const teacher = state.teachers.find((t) => t.id === teacherId);
+  React.useEffect(() => {
+    setAiSummary(teacher?.aiSummary || null);
+  }, [teacher?.aiSummary]);
 
   const allFinals = React.useMemo(() => {
     if (!teacher) return [];
@@ -431,6 +436,11 @@ Your output must be JSON with exact keys:
       const jsonStr = response.text?.trim() || "{}";
       const parsed = JSON.parse(jsonStr);
       setAiSummary(parsed);
+      
+      // Update the teacher profile with the AI summary
+      const updatedTeacher = { ...teacher, aiSummary: { ...parsed, lastGenerated: new Date().toISOString() } };
+      updateTeacher(updatedTeacher);
+      showToast("AI Summary generalized and saved successfully.", "success");
     } catch (e) {
       console.error("AI Generation failed", e);
       alert("AI Generation failed: " + (e instanceof Error ? e.message : String(e)));
@@ -745,7 +755,7 @@ Your output must be JSON with exact keys:
                 {isCollective ? t("rep.obsComparison") : t("rep.domainProfile")}
               </h2>
               <div
-                className={`grid gap-8 items-start ${isCollective && observersInReport.length > 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2 print:grid-cols-1"}`}
+                className={`grid gap-8 items-start ${isCollective && observersInReport.length > 1 ? "grid-cols-1" : "grid-cols-1 lg:grid-cols-2"} print:flex print:flex-col`}
               >
                 <div
                   style={{
@@ -925,8 +935,8 @@ Your output must be JSON with exact keys:
               </div>
             </div>
 
-            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-8 print:grid-cols-1">
-              <div className="lg:col-span-2 print:col-span-1 print-break-inside-avoid">
+            <div className="p-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start mt-8 print:flex print:flex-col">
+              <div className="lg:col-span-2 print:w-full print-break-inside-avoid">
                 <h2
                   style={{
                     fontFamily: '"Barlow Condensed", sans-serif',
@@ -1312,7 +1322,7 @@ Your output must be JSON with exact keys:
                 >
                   {t("rep.hrTitle")}
                 </h2>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:grid-cols-1">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:flex print:flex-col">
                   <div className="card" style={{ padding: "24px" }}>
                     <div
                       style={{ height: "200px" }}
@@ -1532,7 +1542,7 @@ Your output must be JSON with exact keys:
               </div>
             )}
 
-            <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 print:grid-cols-1">
+            <div className="px-8 pb-8 grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8 print:flex print:flex-col">
               <div className="print-break-inside-avoid">
                 <h2
                   style={{

@@ -1,5 +1,12 @@
 export type UserRole = 'admin' | 'observer' | 'hr' | 'teacher';
 
+export interface AiSummary {
+  exec: string;
+  strengths: string;
+  areas: string;
+  lastGenerated: string;
+}
+
 export interface Teacher {
   id: string;
   employeeId?: string;
@@ -7,6 +14,7 @@ export interface Teacher {
   subject: string;
   role: string;
   division: string;
+  aiSummary?: AiSummary;
 }
 
 export interface ObserverPermissions {

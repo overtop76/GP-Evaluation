@@ -170,7 +170,12 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
                     <td style={{ paddingLeft: '24px' }}>
                       <div className="frow" style={{ gap: '12px' }}>
                         <div className="av" style={{ width: '36px', height: '36px', background: 'var(--navy-bg)', borderRadius: '10px', fontSize: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>{ini(tData.fullName)}</div>
-                        <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{tData.fullName}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '14px' }}>{tData.fullName}</span>
+                          {tData.aiSummary && (
+                            <span className="material-icons" style={{ fontSize: '16px', color: '#10b981' }} title="AI Summary Generated">auto_awesome</span>
+                          )}
+                        </div>
                       </div>
                     </td>
                     <td><span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate-dark)' }}>{tData.employeeId || '—'}</span></td>
