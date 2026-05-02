@@ -4,6 +4,7 @@ export interface AiSummary {
   exec: string;
   strengths: string;
   areas: string;
+  hrInfo?: string;
   lastGenerated: string;
 }
 

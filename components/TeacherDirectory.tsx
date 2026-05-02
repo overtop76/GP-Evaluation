@@ -25,6 +25,9 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
   const { t } = useLanguage();
   const { showToast } = useApp();
   const [search, setSearch] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterDiv, setFilterDiv] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<Teacher | null>(null);
@@ -39,7 +42,13 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
   // Filter based on permissions
   const allowedTeachers = React.useMemo(() => teachers.filter(tData => canObserverViewTeacher(currentUser, tData)), [teachers, currentUser]);
 
-  const filteredTeachers = React.useMemo(() => allowedTeachers.filter(tData => tData.fullName.toLowerCase().includes(search.toLowerCase())), [allowedTeachers, search]);
+  const filteredTeachers = React.useMemo(() => allowedTeachers.filter(tData => {
+    const matchSearch = tData.fullName.toLowerCase().includes(search.toLowerCase());
+    const matchRole = !filterRole || tData.role === filterRole;
+    const matchSubject = !filterSubject || tData.subject === filterSubject;
+    const matchDiv = !filterDiv || tData.division.includes(filterDiv);
+    return matchSearch && matchRole && matchSubject && matchDiv;
+  }), [allowedTeachers, search, filterRole, filterSubject, filterDiv]);
 
   const handleAdd = () => {
     if (!newName || !newEmployeeId || !newSubject || !newRole || !newDivs.length) {
@@ -123,8 +132,8 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
       </div>
 
       <div className="card-xl" style={{ overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ position: 'relative', maxWidth: '400px', flex: 1 }}>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', maxWidth: '300px', flex: 1 }}>
             <span className="material-icons-outlined" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--slate)', fontSize: '20px', pointerEvents: 'none' }}>search</span>
             <input 
               className="finput" 
@@ -133,6 +142,24 @@ const TeacherDirectory: React.FC<TeacherDirectoryProps> = ({ teachers, evaluatio
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
+          </div>
+          <div style={{ flex: 1, minWidth: '150px' }}>
+            <select className="finput" value={filterRole} onChange={e => setFilterRole(e.target.value)} style={{ padding: '8px 12px', fontSize: '14px' }}>
+              <option value="">All Roles</option>
+              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: '150px' }}>
+            <select className="finput" value={filterSubject} onChange={e => setFilterSubject(e.target.value)} style={{ padding: '8px 12px', fontSize: '14px' }}>
+              <option value="">All Subjects</option>
+              {SUBJECTS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1, minWidth: '150px' }}>
+            <select className="finput" value={filterDiv} onChange={e => setFilterDiv(e.target.value)} style={{ padding: '8px 12px', fontSize: '14px' }}>
+              <option value="">All Divisions</option>
+              {DIVS.map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
           </div>
           <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--slate)' }}>
             {t('dir.membersFound').replace('{count}', filteredTeachers.length.toString())}

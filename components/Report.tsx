@@ -401,18 +401,24 @@ const Report: React.FC<ReportProps> = ({ teacherId, type, state, onBack }) => {
       const topImps = imps.sort((a,b) => a.score - b.score).slice(0, 5).map(s => s.text).join('; ');
       const domainScoresStr = ds.map(d => `${d.name}: ${d.avg.toFixed(2)}`).join(', ');
 
+      const hrScoreAbs = teacherHRData ? getHRScore('absences', teacherHRData.absences, hrRubricLevel.absences) : null;
+      const hrScoreEarly = teacherHRData ? getHRScore('earlyLate', teacherHRData.earlyLate, hrRubricLevel.earlyLate) : null;
+      const hrInfoStr = teacherHRData ? `HR Data: Absences: ${teacherHRData.absences} (Score: ${hrScoreAbs}), Early Leaves/Late: ${teacherHRData.earlyLate} (Score: ${hrScoreEarly})` : 'HR Data: None provided.';
+
       const promptString = `You are an expert HR and Teacher Performance Reviewer. 
-Please generate 3 professional paragraphs for a teacher evaluation report for ${teacher.fullName}.
+Please generate a professional evaluation report for ${teacher.fullName}.
 Type of Evaluation: ${TYPE_LABELS[currentType]}
 Average Score: ${avgScore.toFixed(2)} out of 4.
 Domain Scores: ${domainScoresStr}
 Identified Strengths: ${topStrengths}
 Areas for Development: ${topImps}
+${hrInfoStr}
 
 Your output must be JSON with exact keys:
 "exec": A concise Executive Summary paragraph
 "strengths": A summary paragraph of the teacher's key strengths
 "areas": A supportive summary paragraph for areas of development
+"hrInfo": A professional paragraph summarizing the HR attendance and punctuality data
       `;
 
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -426,9 +432,10 @@ Your output must be JSON with exact keys:
             properties: {
               exec: { type: Type.STRING },
               strengths: { type: Type.STRING },
-              areas: { type: Type.STRING }
+              areas: { type: Type.STRING },
+              hrInfo: { type: Type.STRING }
             },
-            required: ["exec", "strengths", "areas"]
+            required: ["exec", "strengths", "areas", "hrInfo"]
           }
         }
       });
@@ -774,7 +781,7 @@ Your output must be JSON with exact keys:
                     <BarChart
                       layout="vertical"
                       data={comparisonData}
-                      margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -789,9 +796,9 @@ Your output must be JSON with exact keys:
                       <YAxis
                         type="category"
                         dataKey="name"
-                        width={180}
+                        width={140}
                         tick={{
-                          fontSize: 11,
+                          fontSize: 10,
                           fontWeight: 700,
                           fill: "var(--slate-dark)",
                         }}
@@ -953,7 +960,7 @@ Your output must be JSON with exact keys:
                     <BarChart
                       layout="vertical"
                       data={chartData}
-                      margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
+                      margin={{ top: 5, right: 30, left: 0, bottom: 5 }}
                     >
                       <CartesianGrid
                         strokeDasharray="3 3"
@@ -964,9 +971,9 @@ Your output must be JSON with exact keys:
                       <YAxis
                         type="category"
                         dataKey="name"
-                        width={180}
+                        width={140}
                         tick={{
-                          fontSize: 12,
+                          fontSize: 10,
                           fontWeight: 600,
                           fontFamily: "Barlow",
                           fill: "var(--slate-dark)",
@@ -1534,6 +1541,38 @@ Your output must be JSON with exact keys:
                           }}
                         >
                           "{teacherHRData.notes}"
+                        </div>
+                      </div>
+                    )}
+
+                    {aiSummary?.hrInfo && (
+                      <div
+                        style={{
+                          marginTop: "20px",
+                          background: "rgba(59, 130, 246, 0.05)",
+                          padding: "12px",
+                          borderRadius: "12px",
+                          border: "1px solid #bfdbfe",
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            color: "#1e40af",
+                            textTransform: "uppercase",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          AI ATTENDANCE SUMMARY
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            color: "#1e3a8a",
+                          }}
+                        >
+                          {aiSummary.hrInfo}
                         </div>
                       </div>
                     )}

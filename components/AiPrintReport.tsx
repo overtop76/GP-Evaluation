@@ -85,6 +85,17 @@ export const AiPrintReport: React.FC<AiPrintReportProps> = ({ teacherId, state, 
             {teacher.aiSummary.areas}
           </p>
         </div>
+
+        {teacher.aiSummary.hrInfo && (
+          <div style={{ marginBottom: "32px", background: "rgba(59, 130, 246, 0.05)", padding: "24px", borderRadius: "12px", border: "1px solid #bfdbfe" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: "700", color: "#1e40af", marginBottom: "16px" }}>
+              HR Attendance & Punctuality
+            </h2>
+            <p style={{ fontSize: "15px", lineHeight: "1.7", color: "#1e3a8a" }}>
+              {teacher.aiSummary.hrInfo}
+            </p>
+          </div>
+        )}
         
         <div style={{ marginTop: "60px", textAlign: "center", fontStyle: "italic", fontSize: "13px", color: "#94a3b8" }}>
           * This summary is generated via automated AI analysis based on verified classroom observation data.
